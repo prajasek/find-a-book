@@ -3,13 +3,15 @@ import json
 import re
 from dotenv import load_dotenv
 import os
+from config import GOODREADS_SIGNIN
 
 
 load_dotenv()  
 
 
 def login(page: Page):
-    page.goto("https://www.goodreads.com/user/sign_in")
+    print("Attempting Login...")
+    page.goto(GOODREADS_SIGNIN)
     page.get_by_role("button", name="Sign in with email").click()
     page.screenshot(path="goodreads_login_page.png")
 
@@ -20,6 +22,8 @@ def login(page: Page):
     expect(page.get_by_role("main")).to_be_visible()
 
     page.screenshot(path="goodreads_logged_in.png")
+    print("Login Function Ended...")
+
 
 
 
@@ -67,12 +71,13 @@ def get_books(page):
         if "(" in title:
             title = title.split("(")[0].strip()
 
-        author = book.locator("td.field.title  a").inner_text().strip()
+        author = book.locator("td.field.author  a").inner_text().strip()
 
         books.append({"title": title, "author": author})
 
     json.dumps(books)
 
+    print(books)
     with open("books.json", "w", encoding='utf-8') as output_file:
         json.dump(books, output_file, ensure_ascii=False, indent=4)
         
@@ -83,8 +88,8 @@ def get_books(page):
 def search_books(page, books): 
 
     search_box = page.get_by_role("textbox", name=re.compile(r'Search.*', re.IGNORECASE)).first
-    for book in books[:5]: 
 
+    for book in books[:1]: 
         try:
             search_box.fill(book["title"])
             page.get_by_role("button", name="Search").first.click()
