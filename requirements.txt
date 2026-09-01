@@ -1,0 +1,3 @@
+Flask
+patchright
+python-dotenv
