@@ -1,9 +1,11 @@
 from patchright.sync_api import Page, sync_playwright, expect, TimeoutError
+from book import Book
+from config import GOODREADS_SIGNIN
+from dotenv import load_dotenv
 import json
 import re
-from dotenv import load_dotenv
 import os
-from config import GOODREADS_SIGNIN
+from helpers import _normalize_author, _normalize_title
 
 
 load_dotenv()  
@@ -59,21 +61,31 @@ def _get_books(page) -> list[dict]:
     books: list[str] = []
 
     for book in books_table:
-        title = book.locator("td.field.title  a").inner_text().strip()
 
-        if "(" in title:
-            title = title.split("(")[0].strip()
+        # Title
+        title = book.locator("td.field.title  a").inner_text()
+        normalized_title = _normalize_title(title)
 
-        author = book.locator("td.field.author  a").inner_text().strip()
-        books.append({"title": title, "author": author})
+        # Author
+        author = book.locator("td.field.author  a").inner_text()
+        normalized_author = _normalize_author(author)
+
+        # add to books list
+        books.append({"title": normalized_title, "author": normalized_author})
 
     print(books)
 
-    with open("books.json", "w", encoding='utf-8') as output_file:
-        json.dump(books, output_file, ensure_ascii=False, indent=4)
-        
+    _save_books(books)  # Save the books to a JSON file
+
     # _search_books(page, books)
     return books
+
+
+
+def _save_books(books: list[dict]):
+    with open("books.json", "w", encoding="utf-8") as file:
+        json.dump(books, file, ensure_ascii=False, indent=4)
+
 
 
 def _search_books(page, books): 
@@ -96,8 +108,7 @@ def _search_books(page, books):
 
 
 
-def scrape_books(page) -> list:
-
+def scrape_books(page) -> list[Book]:
     page.get_by_role("link", name="My Books").click()
     page.get_by_role("link", name="Want to Read").click()
     page.get_by_role("link", name="table view").click()
@@ -112,3 +123,67 @@ def scrape_books(page) -> list:
     page.screenshot(path="goodreads_my_books_page.png")
 
     return books
+
+
+# def _normalize_title(title):
+#     """
+#     Normalize the title by removing special characters and converting to lowercase.
+#     """
+
+#     if "(" in title:
+#         title = title.split("(")[0].strip()
+#     if "[" in title: 
+#         title = title.split("[")[0].strip()
+
+#     title = unicodedata.normalize('NFKC', title)
+#     title = title.casefold()
+#     title = re.sub(r'[^\w\s]', '', title)  # Remove special characters
+#     title = re.sub(r'\s+', ' ', title)     # Replace multiple spaces with a single space
+
+#     title = title.strip()
+
+#     return title
+
+
+
+# def _normalize_author(author):
+#     """
+#     Normalize the author by removing special characters and converting to lowercase.
+#     """
+
+#     if "(" in author:
+#         author = author.split("(")[0].strip()
+#     if "[" in author: 
+#         author = author.split("[")[0].strip()
+
+#     author = unicodedata.normalize('NFKC', author)
+#     author = author.casefold()
+
+#     author = re.sub(r'[^a-zA-Z\s,]', '', author)  # Remove special characters
+
+#     author = author.strip()
+#     author = author.lower()
+
+#     name_parts = author.split(",")
+#     name_parts = [part.strip() for part in name_parts if part.strip()]  # ['a  ', '  b', ''] => ['a', 'b']
+
+#     name_parts.sort()
+#     author = ",".join(name_parts)
+
+#     return author
+
+
+if __name__ == "__main__":
+
+    with open('books.json', 'r', encoding='utf-8') as file:
+        books = json.load(file)
+        for book in books:
+            title = book.get("title", "Unknown")
+            author = book.get("author", "Unknown")
+            normalized_title = _normalize_title(title)
+            normalized_author = _normalize_author(author)
+            print(f" {title}")
+            print(f" {normalized_title}")
+            print(f" {author}")
+            print(f" {normalized_author}")
+            print("\n\n")
