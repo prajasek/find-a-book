@@ -30,7 +30,6 @@ def goodreads_login(page: Page):
 
 
 def _scroll_until_stable(page):
-
     books_table = page.locator("#booksBody > tr")
 
     try:
@@ -40,16 +39,22 @@ def _scroll_until_stable(page):
         return False
 
     while True:
-        loaded_books_count = books_table.count()
         books_table.last.scroll_into_view_if_needed()
-        next_book = books_table.nth(loaded_books_count)
 
         # 10 of 30  loaded, 30 of 30  loaded
-        books_load_status = page.locator("#pagestuff #infiniteStatus").text_content().strip()
+        books_load_status = (
+            page.locator("#pagestuff #infiniteStatus")
+            .text_content()
+            .strip()
+        )
 
         # 40 of 50 loaded => ('40', '50')
-        exp = r"(\d+)\sof\s(\d+)\sloaded"
+        exp = r"(\d+)\s+of\s+(\d+)\s+loaded"
         match = re.search(exp, books_load_status)
+
+        if not match:
+            print("Failed to parse book load status from footer.")
+            return False
 
         loaded = match.group(1)
         total_books_in_list = match.group(2)
@@ -57,14 +62,6 @@ def _scroll_until_stable(page):
         # all books loaded, end scrolling
         if int(loaded) == int(total_books_in_list):
             break
-
-        try:
-            next_book.wait_for(state="visible", timeout=3000)
-        except TimeoutError:
-            break
-        except Exception as e:
-            print(f"Error occurred while waiting for the next book: {e}")
-            break  
 
     return True
 
@@ -89,7 +86,6 @@ def _get_books(page) -> list[Book]:
 
     _save_books(books)  # Save the books to a JSON file
 
-    # _search_books(page, books)
     return books
 
 

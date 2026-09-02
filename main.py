@@ -30,25 +30,23 @@ def index():
         page = browser.new_page()
         _setup_debug(page)
 
-
-        books: list[Book] = []    
+        goodreads_books: list[Book] = []    
     
-        if "books.json" not in os.listdir():
+        if "goodreads_books.json" not in os.listdir():
             goodreads_login(page)
-            print("Login Done...")
-            books = scrape_books(page)
+            goodreads_books = scrape_books(page)
 
         else:
-            file = open("books.json","r", encoding="utf-8")
+            file = open("goodreads_books.json","r", encoding="utf-8")
             _books_list: list[Book] = [Book(**book) for book in json.load(file)]
-            books.extend(_books_list)
+            goodreads_books.extend(_books_list)
             file.close()
 
-        if not books:
+        if not goodreads_books:
             return "No books in want-to-read list."
         
         library_handler = Library(page)
-        library_handler.get_books_available(books)
+        library_handler.get_books_available(goodreads_books)
 
         browser.close()
 
@@ -56,7 +54,7 @@ def index():
 
 
     return send_file(
-            "books.json", 
+            "goodreads_books.json", 
             mimetype="application/json")
 
 
