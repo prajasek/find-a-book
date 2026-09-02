@@ -3,7 +3,7 @@ from patchright.sync_api import Page, sync_playwright, expect, TimeoutError
 from book import Book
 from config import HEADLESS_MODE, SLOW_MO
 from helpers import _setup_debug
-from goodreads import login, scrape_books
+from goodreads import goodreads_login, scrape_books
 from library import Library
 import os
 import json
@@ -34,9 +34,9 @@ def index():
         books: list[Book] = []    
     
         if "books.json" not in os.listdir():
-            login(page)
+            goodreads_login(page)
             print("Login Done...")
-            books.extend(scrape_books(page))
+            books = scrape_books(page)
 
         else:
             file = open("books.json","r", encoding="utf-8")

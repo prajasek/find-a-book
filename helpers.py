@@ -2,7 +2,11 @@ import re
 import unicodedata
 from patchright.sync_api import Page
 
+
+
 def _setup_debug(page: Page):
+        """ Debugging setup for the page.
+        """
         # page.on("console", lambda msg: print(f"------------\n\nCONSOLE: {msg.text}\n\n"))
         page.on("pageerror", lambda e: print(f"\n\nPage Error: {e} \n\n"))
 
@@ -52,8 +56,6 @@ def _normalize_author(author):
         # re-arrange name 
         name_parts = author.split(",")
         name_parts = [part.strip() for part in name_parts if part.strip()]  # ['a  ', '  b', ''] => ['a', 'b']
-
-        
 
         name_parts.sort()
         author = ",".join(name_parts)

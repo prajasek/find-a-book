@@ -1,17 +1,17 @@
-from patchright.sync_api import Page, sync_playwright, expect, TimeoutError
+from dataclasses import asdict
+from patchright.sync_api import Page, expect, TimeoutError
 from book import Book
 from config import GOODREADS_SIGNIN
 from dotenv import load_dotenv
 import json
 import re
 import os
-from helpers import _normalize_author, _normalize_title
 
 
 load_dotenv()  
 
 
-def login(page: Page):
+def goodreads_login(page: Page):
     print("Attempting Login...")
     page.goto(GOODREADS_SIGNIN)
     page.get_by_role("button", name="Sign in with email").click()
@@ -44,6 +44,20 @@ def _scroll_until_stable(page):
         books_table.last.scroll_into_view_if_needed()
         next_book = books_table.nth(loaded_books_count)
 
+        # 10 of 30  loaded, 30 of 30  loaded
+        books_load_status = page.locator("#pagestuff #infiniteStatus").text_content().strip()
+
+        # 40 of 50 loaded => ('40', '50')
+        exp = r"(\d+)\sof\s(\d+)\sloaded"
+        match = re.search(exp, books_load_status)
+
+        loaded = match.group(1)
+        total_books_in_list = match.group(2)
+
+        # all books loaded, end scrolling
+        if int(loaded) == int(total_books_in_list):
+            break
+
         try:
             next_book.wait_for(state="visible", timeout=3000)
         except TimeoutError:
@@ -56,22 +70,20 @@ def _scroll_until_stable(page):
 
 
 
-def _get_books(page) -> list[dict]:
+def _get_books(page) -> list[Book]:
+    # locator
     books_table = page.locator("#booksBody > tr").all()
-    books: list[str] = []
+
+    # list of want-to-read books
+    books: list[Book] = []
 
     for book in books_table:
+        title = book.locator("td.field.title  a").inner_text().strip()
+        author = book.locator("td.field.author  a").inner_text().strip()
 
-        # Title
-        title = book.locator("td.field.title  a").inner_text()
-        normalized_title = _normalize_title(title)
+        _book = Book(title=title, author=author) 
 
-        # Author
-        author = book.locator("td.field.author  a").inner_text()
-        normalized_author = _normalize_author(author)
-
-        # add to books list
-        books.append({"title": normalized_title, "author": normalized_author})
+        books.append(_book)
 
     print(books)
 
@@ -82,14 +94,13 @@ def _get_books(page) -> list[dict]:
 
 
 
-def _save_books(books: list[dict]):
+def _save_books(books: list[Book]):
     with open("books.json", "w", encoding="utf-8") as file:
-        json.dump(books, file, ensure_ascii=False, indent=4)
+        json.dump([asdict(book) for book in books], file, ensure_ascii=False, indent=4)
 
 
 
 def _search_books(page, books): 
-
     search_box = page.get_by_role("textbox", name=re.compile(r'Search.*', re.IGNORECASE)).first
 
     for book in books[:1]: 
@@ -108,82 +119,50 @@ def _search_books(page, books):
 
 
 
-def scrape_books(page) -> list[Book]:
+def _navigate_to_want_to_read(page):
     page.get_by_role("link", name="My Books").click()
     page.get_by_role("link", name="Want to Read").click()
     page.get_by_role("link", name="table view").click()
 
+
+def _sanity_footer_visibility_check(page):
+    """ Sanity check to ensure the footer is visible 
+        after loading all books.
+    """
+    footer = page.get_by_role("contentinfo")
+    expect(footer).to_be_visible()
+    page.screenshot(path="goodreads_my_books_page.png")
+
+
+
+def scrape_books(page) -> list[Book]:
+    _navigate_to_want_to_read(page)
+
+    # scroll the want-to-read list until all books are loaded
     if not _scroll_until_stable(page):
         return []
 
-    books = _get_books(page)
+    books: list[Book] = _get_books(page)
 
-    footer= page.get_by_role("contentinfo")
-    expect(footer).to_be_visible()
-    page.screenshot(path="goodreads_my_books_page.png")
+    _sanity_footer_visibility_check(page)
 
     return books
 
 
-# def _normalize_title(title):
-#     """
-#     Normalize the title by removing special characters and converting to lowercase.
-#     """
-
-#     if "(" in title:
-#         title = title.split("(")[0].strip()
-#     if "[" in title: 
-#         title = title.split("[")[0].strip()
-
-#     title = unicodedata.normalize('NFKC', title)
-#     title = title.casefold()
-#     title = re.sub(r'[^\w\s]', '', title)  # Remove special characters
-#     title = re.sub(r'\s+', ' ', title)     # Replace multiple spaces with a single space
-
-#     title = title.strip()
-
-#     return title
-
-
-
-# def _normalize_author(author):
-#     """
-#     Normalize the author by removing special characters and converting to lowercase.
-#     """
-
-#     if "(" in author:
-#         author = author.split("(")[0].strip()
-#     if "[" in author: 
-#         author = author.split("[")[0].strip()
-
-#     author = unicodedata.normalize('NFKC', author)
-#     author = author.casefold()
-
-#     author = re.sub(r'[^a-zA-Z\s,]', '', author)  # Remove special characters
-
-#     author = author.strip()
-#     author = author.lower()
-
-#     name_parts = author.split(",")
-#     name_parts = [part.strip() for part in name_parts if part.strip()]  # ['a  ', '  b', ''] => ['a', 'b']
-
-#     name_parts.sort()
-#     author = ",".join(name_parts)
-
-#     return author
-
-
 if __name__ == "__main__":
 
-    with open('books.json', 'r', encoding='utf-8') as file:
-        books = json.load(file)
-        for book in books:
-            title = book.get("title", "Unknown")
-            author = book.get("author", "Unknown")
-            normalized_title = _normalize_title(title)
-            normalized_author = _normalize_author(author)
-            print(f" {title}")
-            print(f" {normalized_title}")
-            print(f" {author}")
-            print(f" {normalized_author}")
-            print("\n\n")
+    book = Book(title="The Great Gatsby (Special Edition)", author="F. Scott Fitzgerald [Author]")
+    print(asdict(book))
+
+    # with open('books.json', 'r', encoding='utf-8') as file:
+    #     books_from_file = json.load(file)
+    #     for book in books_from_file:
+    #         title = book.get("title", "Unknown")
+    #         author = book.get("author", "Unknown")
+    #         normalized_title = _normalize_title(title)
+    #         normalized_author = _normalize_author(author)
+    #         print(f" {title}")
+    #         print(f" {normalized_title}")
+    #         print(f" {author}")
+    #         print(f" {normalized_author}")
+    #         print("\n\n")
