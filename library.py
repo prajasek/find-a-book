@@ -1,5 +1,5 @@
 from patchright.sync_api import Locator, Page, sync_playwright, expect, TimeoutError
-from book import Book, LibraryBook
+from book import Book, BookStatus, LibraryBook, LibraryLocation
 from config import LIBRARY_URL, TARGET_LIBRARIES
 from dataclasses import asdict
 import re
@@ -123,30 +123,110 @@ class Library:
         return candidates
 
 
-    def _check_availability_at(self, location: str):
-        locations_search_input = self.page.locator('[data-automation-id="locations-search-input"]')
-        locations_search_input.wait_for()
 
+
+    def _update_book_with_location(self, target_book: Book, library: LibraryLocation):
+
+        items = self.page.locator('[data-automation-id="item-info"]')
+        items.first.wait_for()
+
+        if items.count() == 0:
+            return
+
+        count = 0
+        for item_info in items.all():
+            status = item_info.locator('[data-automation-id="drawer-status"]').text_content().strip()
+
+            if (
+                status.lower() == BookStatus.AVAILABLE_1
+                or status.lower() == BookStatus.AVAILABLE_2
+                or status.lower() == BookStatus.AVAILABLE_3
+            ):
+                count = count + 1
+                
+        if count > 0:
+            library.book_count = count
+            library.status = "available"
+
+        target_book.libraries.append(library)
+                
+
+
+    def _close_modal(self):
+        # If modal is open, close it
+        modal = self.page.locator('.modal-content').filter(visible=True)
+        if modal.count():
+            close_modal_btn = modal.locator('[data-automation-id="close-locations-drawer-btn"]')
+            close_modal_btn.click()
+
+
+
+    def _check_availability_at(self, target_locations: list[LibraryLocation], target_book: Book) -> bool:
+
+        for library in target_locations:
+
+            self._close_modal()
+        
+            all_locations_locator = self.page.locator('[data-automation-id="all-locations"]')
+            all_locations_locator.wait_for()
+
+            if all_locations_locator.count() == 0:
+                return False
+
+            all_locations_locator.click()
+            locations_search_input = self.page.locator('[data-automation-id="locations-search-input"]')
+            locations_search_input.wait_for()
+
+            locations_search_input.fill(library.location)
+            locations_search_input.press("Enter")
+
+            available_locations_block = self.page.locator('[data-automation-id="available-locations-block"]')
+            available_locations_block.wait_for()
+
+        
+            # not present at location, continue to next book, not a failure
+            if available_locations_block.count() == 0:
+                return True
+            
+            available_locations_list = available_locations_block.get_by_role("list")
+            available_locations_list.wait_for()
+
+            locations_listitems = available_locations_list.get_by_role("listitem")
+            locations_listitems.first.wait_for()
+
+            # search in even location where available for our target location
+            for location_listitem in locations_listitems.all():
+
+                location_link: Locator = location_listitem.locator(
+                                                '[data-automation-id="drawer-location-item-available"]'
+                                            )
+
+                location_str: str = location_link.text_content()
+
+
+                if library.location.lower().strip() == location_str.lower().strip():
+                    location_link.click()
+                    self._update_book_with_location(
+                        target_book,
+                        library
+                    )
+
+        self._close_modal()
+        return True
 
 
     def _update_available_locations(self, target_book: Book) -> bool:
-
         self._navigate(target_book.library_book.url)
+        
+        target_locations = [
+                    LibraryLocation(location=location) 
+                    for location in TARGET_LIBRARIES
+                ]
+        
+        
+        return self._check_availability_at(target_locations, target_book)
 
-        all_locations_locator = self.page.locator('[data-automation-id="all-locations"]')
-        all_locations_locator.wait_for()
-
-        if all_locations_locator.count() == 0:
-            return False
-
-        all_locations_locator.click()
-
-        for location in TARGET_LIBRARIES: 
-            self._check_availability_at(location)
-
-
-        self._go_back()
-        return True
+       
 
         
     def _update_availability(self, target_book: Book):
@@ -166,18 +246,15 @@ class Library:
         if matching_library_book:
             target_book.library_book = matching_library_book
 
-            # try to load the book page couple of times, if failure
+            # retry loading book page couple of times, if failing to load
+            # the library website is sometimes laggy
             while retries < 2:
                 if self._update_available_locations(target_book):
                     break
                 retries = retries + 1
 
 
-            
-
-            
-
-
+        
 
 
     def _get_search_results_count(self, status_msg: Locator):
@@ -275,6 +352,8 @@ class Library:
                 continue
 
             self._update_availability(book)
+
+            self._go_back()
 
                   
 

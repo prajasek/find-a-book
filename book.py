@@ -1,12 +1,24 @@
 from dataclasses import dataclass, field
 from typing import Literal
 from helpers import _normalize_title, _normalize_author
+from enum import Enum
+
+
+
+class BookStatus(Enum):
+    CHECKED_OUT = "checked out"
+    ON_HOLD_1 = "on hold"
+    ON_HOLD_2 = "on holdshelf"
+    AVAILABLE_1 = "on shelf"
+    AVAILABLE_2 = "on-shelf"
+    AVAILABLE_3 = "recently returned"
 
 
 @dataclass
-class Library:
+class LibraryLocation:
     location: str
-    book_count: str
+    book_count: int = 0
+    status: Literal["on_hold", "available"] | None = None
 
 
 @dataclass
@@ -18,7 +30,7 @@ class LibraryBook:
 
     match_type: Literal["exact", "close"] | None = None
     url: str | None = None
-    libraries: list[Library] = field(default_factory=list)
+    libraries: list[LibraryLocation] = field(default_factory=list)
 
     def __post_init__(self):
         self.normalized_title = _normalize_title(self.title)
