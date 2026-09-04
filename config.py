@@ -1,4 +1,4 @@
-LIBRARY_URL="https://chesp.na.iiivega.com/"
+LIBRARY_URL="https://chesp.na.iiivega.com"
 GOODREADS_SIGNIN="https://www.goodreads.com/user/sign_in"
 
 HEADLESS_MODE=False

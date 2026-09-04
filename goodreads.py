@@ -7,7 +7,7 @@ import json
 import re
 import os
 
-from helpers import _normalize_before_match
+from helpers import _normalize_before_search
 
 
 load_dotenv()  
@@ -81,8 +81,8 @@ def _get_books(page) -> list[Book]:
         author = book.locator("td.field.author  a").inner_text().strip()
 
         # clean up before search. Example, apostrophes
-        normalized_title_pre_search = _normalize_before_match(title)
-        normalized_author_pre_search = _normalize_before_match(author)
+        normalized_title_pre_search = _normalize_before_search(title)
+        normalized_author_pre_search = _normalize_before_search(author)
 
         _book = Book(
             title=normalized_title_pre_search,

@@ -1,7 +1,6 @@
 from patchright.sync_api import Locator, Page, sync_playwright, expect, TimeoutError
 from book import Book, LibraryBook
-from config import LIBRARY_URL
-from helpers import _normalize_before_match
+from config import LIBRARY_URL, TARGET_LIBRARIES
 from dataclasses import asdict
 import re
 import json
@@ -41,7 +40,7 @@ class Library:
             pass
 
 
-    def _navigate(self, url):
+    def _navigate(self, url: str):
         self.page.goto(url)
 
 
@@ -72,17 +71,17 @@ class Library:
     def _find_match(self, candidates: list[LibraryBook], target_book: Book) -> LibraryBook | None:
         for candidate_book in candidates:
             if self._is_exact_match(candidate_book, target_book):
-                print("exact match")
+                candidate_book.match_type = "exact"
                 return candidate_book
             
             elif self._is_close_match(candidate_book, target_book):
-                print("close match")
+                candidate_book.match_type = "close"
                 return candidate_book
 
         return None
 
 
-    def _extract_book_info_from_card(self, card: Locator) -> Book | None:
+    def _extract_book_info_from_card(self, card: Locator) -> LibraryBook | None:
         """ Get title, author, url from each card panel from 
             search results        
         """
@@ -95,14 +94,14 @@ class Library:
         if author_locator.count() == 0:
             return None
 
-        title = _normalize_before_match(title_locator.text_content().strip())
-        author = _normalize_before_match(author_locator.text_content().strip())
-        book_link = title_locator.get_attribute("href")
+        title = title_locator.text_content().strip()
+        author = author_locator.text_content().strip()
+        href = title_locator.get_attribute("href")
 
         return LibraryBook(
             title=title,
             author=author,
-            url=book_link
+            url= LIBRARY_URL + href if href.startswith("/search") else LIBRARY_URL + "/" + href
         )
 
 
@@ -124,8 +123,33 @@ class Library:
         return candidates
 
 
+    def _check_availability_at(self, location: str):
+        locations_search_input = self.page.locator('[data-automation-id="locations-search-input"]')
+        locations_search_input.wait_for()
+
+
+
+    def _update_available_locations(self, target_book: Book) -> bool:
+
+        self._navigate(target_book.library_book.url)
+
+        all_locations_locator = self.page.locator('[data-automation-id="all-locations"]')
+        all_locations_locator.wait_for()
+
+        if all_locations_locator.count() == 0:
+            return False
+
+        all_locations_locator.click()
+
+        for location in TARGET_LIBRARIES: 
+            self._check_availability_at(location)
+
+
+        self._go_back()
+        return True
+
         
-    def _check_availability(self, target_book: Book):
+    def _update_availability(self, target_book: Book):
         """ 1. collect search results
             2. check for matches with target book.
             3. check availability in target libraries
@@ -135,12 +159,21 @@ class Library:
         print("returning from collection.....-------------------------------------------------")
 
         # possible matching book found in search results
-        library_book = self._find_match(candidates, target_book)
+        matching_library_book = self._find_match(candidates, target_book)
 
-        if library_book:
-            self.page._navigate(library_book.library_book_url)
+        retries = 0
 
-            self._update
+        if matching_library_book:
+            target_book.library_book = matching_library_book
+
+            # try to load the book page couple of times, if failure
+            while retries < 2:
+                if self._update_available_locations(target_book):
+                    break
+                retries = retries + 1
+
+
+            
 
             
 
@@ -219,6 +252,8 @@ class Library:
 
         for book in books:
             print(f"SEARCHING ----------  {book.title}")
+
+            self.searchbar.wait_for()
             self.searchbar.fill(book.title)
             self.searchbar.press("Enter")
 
@@ -239,7 +274,7 @@ class Library:
             if search_hits_count == 0:
                 continue
 
-            self._check_availability(book)
+            self._update_availability(book)
 
                   
 

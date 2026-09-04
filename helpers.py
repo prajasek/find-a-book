@@ -12,7 +12,7 @@ def _setup_debug(page: Page):
 
 
 
-def _normalize_before_match(string: str):
+def _normalize_before_search(string: str):
         return string.replace("’", "'")
 
 

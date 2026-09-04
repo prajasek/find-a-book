@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Literal
 from helpers import _normalize_title, _normalize_author
 
 
@@ -8,7 +9,6 @@ class Library:
     book_count: str
 
 
-
 @dataclass
 class LibraryBook:
     title: str
@@ -16,6 +16,7 @@ class LibraryBook:
     normalized_title: str = field(init=False)
     normalized_author: str = field(init=False)
 
+    match_type: Literal["exact", "close"] | None = None
     url: str | None = None
     libraries: list[Library] = field(default_factory=list)
 
