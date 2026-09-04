@@ -12,6 +12,11 @@ def _setup_debug(page: Page):
 
 
 
+def _normalize_before_match(string: str):
+        return string.replace("’", "'")
+
+
+
 def _normalize_title(title):
         """
         Normalize the title by removing special characters and converting to lowercase.
@@ -53,11 +58,25 @@ def _normalize_author(author):
         author = re.sub(r'\s+', ' ', author)     # Replace multiple spaces with a single spac
         author = author.strip()
 
-        # re-arrange name 
+        # re-arrange name
         name_parts = author.split(",")
         name_parts = [part.strip() for part in name_parts if part.strip()]  # ['a  ', '  b', ''] => ['a', 'b']
 
-        name_parts.sort()
-        author = ",".join(name_parts)
 
-        return author
+        # Treat names as just word vectors:
+        # - Remove one character words (initials).
+        # - Split words, sort them to compare.
+        words_in_name = []
+        for part in name_parts:
+        
+                parts = [
+                        word for word in part.split()
+                        if len(word) > 1
+                ]
+
+                words_in_name.extend(parts)
+        
+        words_in_name.sort()
+        normalized_author = " ".join(words_in_name)
+
+        return normalized_author

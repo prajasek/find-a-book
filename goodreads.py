@@ -7,6 +7,8 @@ import json
 import re
 import os
 
+from helpers import _normalize_before_match
+
 
 load_dotenv()  
 
@@ -78,7 +80,14 @@ def _get_books(page) -> list[Book]:
         title = book.locator("td.field.title  a").inner_text().strip()
         author = book.locator("td.field.author  a").inner_text().strip()
 
-        _book = Book(title=title, author=author) 
+        # clean up before search. Example, apostrophes
+        normalized_title_pre_search = _normalize_before_match(title)
+        normalized_author_pre_search = _normalize_before_match(author)
+
+        _book = Book(
+            title=normalized_title_pre_search,
+            author=normalized_author_pre_search
+        )
 
         books.append(_book)
 
@@ -91,27 +100,8 @@ def _get_books(page) -> list[Book]:
 
 
 def _save_books(books: list[Book]):
-    with open("books.json", "w", encoding="utf-8") as file:
+    with open("goodreads_books.json", "w", encoding="utf-8") as file:
         json.dump([asdict(book) for book in books], file, ensure_ascii=False, indent=4)
-
-
-
-def _search_books(page, books): 
-    search_box = page.get_by_role("textbox", name=re.compile(r'Search.*', re.IGNORECASE)).first
-
-    for book in books[:1]: 
-        try:
-            search_box.fill(book["title"])
-            page.get_by_role("button", name="Search").first.click()
-
-            page.locator('.tableList').first.wait_for(state="visible")
-
-            page.screenshot(path=f"goodreads_search_{book['title']}.png")
-
-            search_box.fill("")
-        except Exception as e:
-            print(f"Error occurred while searching for book '{book['title']}': {e}")
-            break
 
 
 
@@ -143,22 +133,3 @@ def scrape_books(page) -> list[Book]:
     _sanity_footer_visibility_check(page)
 
     return books
-
-
-if __name__ == "__main__":
-
-    book = Book(title="The Great Gatsby (Special Edition)", author="F. Scott Fitzgerald [Author]")
-    print(asdict(book))
-
-    # with open('books.json', 'r', encoding='utf-8') as file:
-    #     books_from_file = json.load(file)
-    #     for book in books_from_file:
-    #         title = book.get("title", "Unknown")
-    #         author = book.get("author", "Unknown")
-    #         normalized_title = _normalize_title(title)
-    #         normalized_author = _normalize_author(author)
-    #         print(f" {title}")
-    #         print(f" {normalized_title}")
-    #         print(f" {author}")
-    #         print(f" {normalized_author}")
-    #         print("\n\n")

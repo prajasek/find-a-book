@@ -11,8 +11,8 @@ import json
 
 app = Flask(__name__)
 
-@app.route("/")
-def index():
+@app.route("/<string:action>")
+def index(action):
 
     print("Starting...")
     with sync_playwright() as playwright:
@@ -32,21 +32,25 @@ def index():
 
         goodreads_books: list[Book] = []    
     
-        if "goodreads_books.json" not in os.listdir():
+        if action == "goodreads_update":
             goodreads_login(page)
             goodreads_books = scrape_books(page)
 
         else:
             file = open("goodreads_books.json","r", encoding="utf-8")
-            _books_list: list[Book] = [Book(**book) for book in json.load(file)]
+            _books_list: list[Book] = [Book(book["title"], book["author"]) for book in json.load(file)]
             goodreads_books.extend(_books_list)
             file.close()
 
+
         if not goodreads_books:
             return "No books in want-to-read list."
-        
-        library_handler = Library(page)
-        library_handler.get_books_available(goodreads_books)
+
+        if action == "search":
+            library_handler = Library(page)
+            library_handler.get_books_available(goodreads_books)
+
+        print(goodreads_books)
 
         browser.close()
 
