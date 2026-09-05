@@ -148,8 +148,7 @@ class Library:
             library.book_count = count
             library.status = "available"
 
-        target_book.libraries.append(library)
-                
+        target_book.library_book.libraries.append(library)
 
 
     def _close_modal(self):
@@ -219,7 +218,7 @@ class Library:
         self._navigate(target_book.library_book.url)
         
         target_locations = [
-                    LibraryLocation(location=location) 
+                    LibraryLocation(location=location)
                     for location in TARGET_LIBRARIES
                 ]
         
@@ -228,7 +227,6 @@ class Library:
 
        
 
-        
     def _update_availability(self, target_book: Book):
         """ 1. collect search results
             2. check for matches with target book.

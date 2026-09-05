@@ -1,3 +1,5 @@
+from dataclasses import asdict
+
 from flask import Flask, send_file
 from patchright.sync_api import Page, sync_playwright, expect, TimeoutError
 from book import Book
@@ -49,6 +51,10 @@ def index(action):
         if action == "search":
             library_handler = Library(page)
             library_handler.get_books_available(goodreads_books)
+
+        with open("search_results.json", "w", encoding="utf-8") as output_file:
+            json.dump([asdict(book) for book in goodreads_books], output_file, ensure_ascii=False, indent=4)
+
 
         print(goodreads_books)
 
