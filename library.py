@@ -1,24 +1,23 @@
-from patchright.sync_api import Locator, Page, sync_playwright, expect, TimeoutError
-from book import Book, BookStatus, LibraryBook, LibraryLocation
-from config import LIBRARY_URL, TARGET_LIBRARIES, TIMEOUT
 from dataclasses import asdict
 import re
 import json
+from patchright.sync_api import Locator, Page, sync_playwright, expect, TimeoutError
+from book import Book, LibraryBook, LibraryLocation
+from config import LIBRARY_URL, TARGET_LIBRARIES, TIMEOUT, LONG_TIMEOUT, DEBUG_MODE
 
-
-
-#TODO:
-# navigate to library
-# cookies
-# find search bar
-# find top 10 matches
-# match book name
-# match author
-# find associated library - "ON SHELF" > 1 or  Checked out
-# return list
 
 
 class Library:
+    """
+    # navigate to library
+    # cookies
+    # find search bar
+    # find top 10 matches
+    # match book name
+    # match author
+    # find associated library - "ON SHELF" > 1 or  Checked out
+    # update books list`
+    """
 
     def __init__(self, page):
         self.page = page
@@ -31,7 +30,7 @@ class Library:
 
     def _deal_with_cookies(self):
         modal = self.page.get_by_role("dialog", name="Privacy")
-        modal.wait_for(timeout=3000)
+        modal.wait_for(timeout=LONG_TIMEOUT)
         self.page.screenshot(path="SCREENSHOTS_DIR/modal.png")
         close_btn = modal.get_by_role("button", name="Close")
         close_btn.click()
@@ -46,80 +45,6 @@ class Library:
         self.page.go_back()
         
 
-    def _is_exact_match(self, candidate: LibraryBook, target_book: Book) -> bool:
-        return (
-            candidate.normalized_title == target_book.normalized_title
-            and candidate.normalized_author == target_book.normalized_author
-        )
-        
-
-    def _is_close_match(self, candidate: LibraryBook, target_book: Book) -> bool:
-        if candidate.normalized_author != target_book.normalized_author:
-            return False
-
-        candidate_words = set(candidate.normalized_title.split())
-        target_book_words = set(target_book.normalized_title.split())
-
-        return (
-            candidate_words <= target_book_words
-            or target_book_words <= candidate_words
-        )
-
-        
-    def _find_match(self, candidates: list[LibraryBook], target_book: Book) -> LibraryBook | None:
-        for candidate_book in candidates:
-            if self._is_exact_match(candidate_book, target_book):
-                candidate_book.match_type = "exact"
-                return candidate_book
-            
-            elif self._is_close_match(candidate_book, target_book):
-                candidate_book.match_type = "close"
-                return candidate_book
-
-        return None
-
-
-    def _extract_book_info_from_card(self, card: Locator) -> LibraryBook | None:
-        """ Get title, author, url from each card panel from 
-            search results        
-        """
-        print("Extracting...")
-        title_locator = card.locator('[data-automation-id="search-card-title"]')
-        author_locator = card.locator('[data-automation-id="author"]')
-
-        if author_locator.count() == 0:
-            return None
-
-        title = title_locator.text_content().strip()
-        author = author_locator.text_content().strip()
-        href = title_locator.get_attribute("href")
-
-        return LibraryBook(
-            title=title,
-            author=author,
-            url= LIBRARY_URL + href if href.startswith("/search") else LIBRARY_URL + "/" + href
-        )
-
-
-    def _collect_search_results(self, target_book) -> list[LibraryBook] :
-        print(f"-------Collecting search results for {target_book.title}-------------")
-
-        candidates: list[LibraryBook] = []
-        candidate_book_cards = self.page.locator('[data-automation-id="search-card"]').all()
-
-        for card in candidate_book_cards:
-            library_book = self._extract_book_info_from_card(card)
-
-            if library_book:
-                candidates.append(library_book)
-
-            with open(f"SEARCH_RESULTS/results_{target_book.normalized_title}.json", "w", encoding="utf-8") as file:
-                json.dump([asdict(book) for book in candidates], file, ensure_ascii=False, indent=4)
-
-        return candidates
-
-
-
 
     def _update_book_with_location(self, target_book: Book, library: LibraryLocation):
         """ Get availability status for this location
@@ -128,15 +53,16 @@ class Library:
             - CHECKED OUT
             etc...
         """
+        print(f"Updating book availability at {library.location}.\n")
         items = self.page.locator('[data-automation-id="item-info"]')
         try:
             items.first.wait_for(timeout=TIMEOUT)
-        except TimeoutError:
-            raise
+        except TimeoutError as e:
+            raise e
 
         for item_info in items.all():
-            print(f"item: {item_info}")
             status_text = item_info.locator('[data-automation-id="drawer-status"]').text_content().strip().lower()
+            print(f"Item: {item_info}: {status_text}")
 
             library.status[status_text] = library.status.get(status_text, 0) + 1
 
@@ -177,9 +103,11 @@ class Library:
 
 
     def _check_availability_at(self, target_locations: list[LibraryLocation], target_book: Book) -> bool:
-
+        """ 
+        Check each library location for book availability.      
+        """
         for library in target_locations:
-            print("checking library", library.location)
+            print(f"Checking library location: {library.location}")
 
             self._close_modal_if_visible()
         
@@ -187,15 +115,16 @@ class Library:
 
             # 'View all locations' button not loading
             try:
-                all_locations_locator.wait_for(timeout=3000)
-            except TimeoutError:
-                raise
+                all_locations_locator.wait_for(timeout=LONG_TIMEOUT)
+            except TimeoutError as e:
+                raise e
             
-            print("\nclicking all locations\n")
+            print("Clicking all locations.\n")
             all_locations_locator.click()
             locations_search_input = self.page.locator('[data-automation-id="locations-search-input"]')
             locations_search_input.wait_for()
 
+            print("Entering location search.\n")
             locations_search_input.fill(library.location)
             locations_search_input.press("Enter")
 
@@ -213,19 +142,18 @@ class Library:
             locations_listitems = available_locations_list.get_by_role("listitem")
             locations_listitems.first.wait_for(timeout=TIMEOUT)
 
-            # check if target location is available, and update book with 
-            # availability status
+            # check if target location is available, and update book with availability status
             for location_listitem in locations_listitems.all():
 
                 location_link: Locator = location_listitem.locator(
                                                 '[data-automation-id="drawer-location-item-available"]'
                                             )
 
-                location_str: str = location_link.text_content()
+                location_text: str = location_link.text_content()
 
-                print(f"CHECKING LOCATION: {location_str} \n")
+                print(f"Checking location: {location_text} \n")
 
-                if library.location.lower().strip() == location_str.lower().strip():
+                if library.location.lower().strip() == location_text.lower().strip():
                     location_link.click()
                     self._update_book_with_location(
                         target_book,
@@ -240,54 +168,168 @@ class Library:
         """ Check target libraries for availability       
         """
 
+        # library locations to search at       
+        target_locations = [
+                LibraryLocation(location=location)
+                for location in TARGET_LIBRARIES
+        ]
+
         # retry loading book page couple of times, if failing to load
         # the library website is sometimes laggy
         for attempt in range(2):
             try:
-                print(f"navigating to {target_book.library_book.url}")
+                print(f"Navigating to book url for {target_book.title}: {target_book.library_book.url}")
                 self._navigate(target_book.library_book.url)
-                
-                target_locations = [
-                            LibraryLocation(location=location)
-                            for location in TARGET_LIBRARIES
-                        ]
-                
                 self._check_availability_at(target_locations, target_book)
+                break
 
             except TimeoutError:
-                print(f"Attemping location availability again for {target_book.title}")
+                print(f"TimeoutError. Retrying location search for {target_book.title}.")
                 if attempt == 1:
-                    print(f"Location update failed for {target_book.title}")
+                    print(f"Location search for {target_book.title} failed.")
                     raise
 
 
 
-
-    def _update_availability(self, target_book: Book):
-        """ 1. collect search results
-            2. check for matches with target book.
-            3. check availability in target libraries
+    def _is_exact_match(self, candidate: LibraryBook, target_book: Book) -> bool:
         """
-        print("check availability function: START")
+        If title and author are exact matches character by character.
+        """
+        return (
+            candidate.normalized_title == target_book.normalized_title
+            and candidate.normalized_author == target_book.normalized_author
+        )
+
+        
+
+    def _is_close_match(self, candidate: LibraryBook, target_book: Book) -> bool:
+        """ 
+        If normalized target book is a subset of candidate library book title, 
+        or vice-versa, consider it a close match.        
+
+        Ex:
+        - target:    Paris Apartment
+        - candidate: Paris Apartment A Novel
+        """
+        if candidate.normalized_author != target_book.normalized_author:
+            return False
+
+        candidate_words = set(candidate.normalized_title.split())
+        target_book_words = set(target_book.normalized_title.split())
+
+        return (
+            candidate_words <= target_book_words
+            or target_book_words <= candidate_words
+        )
+
+
+
+    def _find_match(self, candidates: list[LibraryBook], target_book: Book) -> LibraryBook | None:
+        for candidate_book in candidates:
+            if self._is_exact_match(candidate_book, target_book):
+                candidate_book.match_type = "exact"
+                return candidate_book
+            
+            elif self._is_close_match(candidate_book, target_book):
+                candidate_book.match_type = "close"
+                return candidate_book
+
+        return None
+
+
+
+    def _extract_book_info_from_card(self, card: Locator) -> LibraryBook | None:
+        """ Get title, author, url from each card panel from 
+            search results and return a LibraryBook.
+        """
+        print("Extracting info")
+
+        title_locator = card.locator('[data-automation-id="search-card-title"]')
+        author_locator = card.locator('[data-automation-id="author"]')
+
+        if author_locator.count() == 0:
+            return None
+
+        title = title_locator.text_content().strip()
+        author = author_locator.text_content().strip()
+        href = title_locator.get_attribute("href")
+
+        if title and author and href:
+            return LibraryBook(
+                title=title,
+                author=author,
+                url= LIBRARY_URL + href if href.startswith("/search") else LIBRARY_URL + "/" + href
+            )
+        
+        return None
+
+
+    def _collect_search_results(self, target_book) -> list[LibraryBook] :
+        """ Collect all search results from first page, and 
+            return list of LibraryBook candidates.       
+        """
+        print(f"-------Collecting search results for {target_book.title}-------------")
+
+        candidates: list[LibraryBook] = []
+        candidate_book_cards = self.page.locator('[data-automation-id="search-card"]')
+
+        try:
+            # wait for atleast one search card, and return list of search cards.
+            candidate_book_cards.first.wait_for(timeout=TIMEOUT)
+            candidate_book_cards = candidate_book_cards.all()
+
+        except TimeoutError:
+            # no search cards
+            return
+
+        for card in candidate_book_cards:
+            library_book = self._extract_book_info_from_card(card)
+
+            if library_book:
+                candidates.append(library_book)
+
+        if DEBUG_MODE:
+            with open(f"SEARCH_RESULTS/results_{target_book.normalized_title}.json", "w", encoding="utf-8") as file:
+                json.dump([asdict(book) for book in candidates], file, ensure_ascii=False, indent=4)
+
+        return candidates
+
+
+
+    def _update_availability(self, target_book: Book) -> bool:
+        """ 
+        1. Collect search results
+        2. Check for matches with target book.
+        3. Check availability in target library locations.
+        """
+
+        print("START: check availability function")
         candidates: list[LibraryBook] = self._collect_search_results(target_book)
-        print("returning from collection.....-------------------------------------------------")
+        print("Collected search results.")
+
+        if not candidates:
+            print(f"Zero candidates for {target_book.title}.")
+            return False
 
         # possible matching book found in search results
+        print("Finding match...")
+        matching_library_book: LibraryBook = self._find_match(candidates, target_book)
 
-        print("Findign match")
-        matching_library_book = self._find_match(candidates, target_book)
-        print("Finished finding match")
+        # search candidates available but no match found.
+        if not matching_library_book:
+            print(f"No match found for {target_book.title}.")
+            return False
+        
+        print(f" --> Found matching book for {target_book.title}:{matching_library_book}\n")
 
-        if matching_library_book:
-            print(" --> found matching book", matching_library_book)
-            target_book.library_book = matching_library_book
-            print(f"TARGET BOOK:  {target_book}")
-            
-            self._update_available_locations(target_book)
+        target_book.library_book = matching_library_book
+
+        self._update_available_locations(target_book)
+        return True
 
 
 
-    
+
 
     def _get_search_results_count(self, status_msg: Locator):
         if not status_msg.count():
@@ -329,14 +371,14 @@ class Library:
             '[data-automation-id="facet-checkbox"]'
             ).filter(
                 has_text=re.compile(fr"^{book_format}")
-                )
+            )
 
         # open drop-down if not already opened
         if not book_checkbox.is_visible():
             format_dropdown_button.click()
         
         try:
-            book_checkbox.wait_for(state="visible", timeout=3000)
+            book_checkbox.wait_for(state="visible", timeout=LONG_TIMEOUT)
         except TimeoutError:
             return False
 
@@ -353,11 +395,11 @@ class Library:
         self.searchbar.fill(book.title)
         self.searchbar.press("Enter")
 
+        # Book not available in requested format Ex: "BOOK"
         if not self._apply_format_filters("BOOK"):
-            # book not available in library, move on to next book
             return False, f"Book format not available for {book.title}."
 
-        print("available book filter: contiuining")
+        # Check search results status
         # Ex: 12 results shown, 0 results found, 1 result found
         search_status = self.page.locator('.search-results-message')
         search_status.wait_for()
@@ -369,30 +411,35 @@ class Library:
         if search_hits_count == 0:
             return False, f"No hits for {book.title}."
 
-        self._update_availability(book)
-
-        self._go_back()
+        if self._update_availability(book):
+            self._go_back()
 
         return True, f"Search for {book.title} complete."
 
 
 
     def _initialize_search(self):
-        self.searchbar.wait_for()
+        """
+        Do a random search, so we land on the main search page with filters.
+        Resulting page is where the main book search happens.
+        """
+        self.searchbar.wait_for(timeout=LONG_TIMEOUT)
         self.searchbar.fill("1")
         self.searchbar.press("Enter")
-        self.page.get_by_role("region", name="Refine Results").wait_for()
+        self.page.get_by_role("region", name="Refine Results").wait_for(timeout=LONG_TIMEOUT)
 
 
 
     def _get_fresh_search_session(self):
+        """ Provide the main search page for new search session.
+        """
         self._navigate(LIBRARY_URL)
         self._deal_with_cookies()
         self._initialize_search()
 
 
 
-    def _search_books(self, books: list[Book]):
+    def search_books(self, books: list[Book]):
 
         self._get_fresh_search_session()
 
@@ -401,11 +448,7 @@ class Library:
                 try:
                     # handle normal failure like 0 books hits, or BOOK format not available
                     status, msg = self._search_book(book)
-                    if not status:
-                        print(msg)
-                        break
-                    
-                    print(msg)
+                    print(status, msg)
                     break
 
                 except TimeoutError:
@@ -418,8 +461,3 @@ class Library:
 
                     
 
-            
-
-    def get_books_available(self, books: list[Book]):
-
-        self._search_books(books)

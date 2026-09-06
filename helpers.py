@@ -54,21 +54,23 @@ def _normalize_author(author):
         parts = author.split(",")
         author = ",".join(parts[:2])
 
+        # 'Foley   Lucy A. '  => foley lucy a
         author = re.sub(r'[^a-zA-Z\s,]', '', author)  # Remove special characters
-        author = re.sub(r'\s+', ' ', author)     # Replace multiple spaces with a single spac
+        author = re.sub(r'\s+', ' ', author)          # Replace multiple spaces with a single space
         author = author.strip()
 
-        # re-arrange name
+        # strip empty spaces
+        # 'foley lucy a '  => ["foley", "lucy a"]
         name_parts = author.split(",")
-        name_parts = [part.strip() for part in name_parts if part.strip()]  # ['a  ', '  b', ''] => ['a', 'b']
+        name_parts = [part.strip() for part in name_parts if part.strip()]
 
 
         # Treat names as just word vectors:
-        # - Remove one character words (initials).
+        # - Remove one character words/initials.
         # - Split words, sort them to compare.
+        # ['foley', 'lucy a'] -> ['foley', 'lucy']
         words_in_name = []
         for part in name_parts:
-        
                 parts = [
                         word for word in part.split()
                         if len(word) > 1
@@ -77,6 +79,8 @@ def _normalize_author(author):
                 words_in_name.extend(parts)
         
         words_in_name.sort()
+
+        # ['foley', 'lucy'] -> 'foley lucy'
         normalized_author = " ".join(words_in_name)
 
         return normalized_author

@@ -13,6 +13,7 @@ from helpers import _normalize_before_search
 load_dotenv()  
 
 
+
 def goodreads_login(page: Page):
     print("Attempting Login...")
     page.goto(GOODREADS_SIGNIN)
@@ -27,7 +28,6 @@ def goodreads_login(page: Page):
 
     page.screenshot(path="goodreads_logged_in.png")
     print("Login Function Ended...")
-
 
 
 

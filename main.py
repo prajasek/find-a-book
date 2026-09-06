@@ -1,17 +1,17 @@
+import json
 from dataclasses import asdict
-
-from flask import Flask, request
+from flask import Flask, jsonify, request
 from patchright.sync_api import Page, sync_playwright, expect, TimeoutError
 from book import Book
 from config import HEADLESS_MODE, SLOW_MO
 from helpers import _setup_debug
 from goodreads import goodreads_login, scrape_books
 from library import Library
-import os
-import json
 
 
 app = Flask(__name__)
+
+
 
 @app.route("/<string:action>")
 def index(action):
@@ -20,6 +20,7 @@ def index(action):
         return "Not Found", 404
 
     print(f"Starting...path={request.path}, action={action}")
+    
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(
             headless=HEADLESS_MODE,
@@ -33,46 +34,139 @@ def index(action):
         )
 
         page = browser.new_page()
-        _setup_debug(page)
 
-        goodreads_books: list[Book] = []    
-    
-        if action == "goodreads_update":
-            goodreads_login(page)
-            goodreads_books = scrape_books(page)
-
-        elif action == "search":
-            file = open("goodreads_books.json","r", encoding="utf-8")
-            _books_list: list[Book] = [Book(book["title"], book["author"]) for book in json.load(file)]
-            goodreads_books.extend(_books_list)
-            file.close()
-  
-
-
-        if not goodreads_books:
-            return "No books in want-to-read list."
-
-        if action == "search":
-            library_handler = Library(page)
-            library_handler.get_books_available(goodreads_books)
-
-
-        with open("search_results.json", "w", encoding="utf-8") as output_file:
-            json.dump([asdict(book) for book in goodreads_books], output_file, ensure_ascii=False, indent=4)
-
-
-        print(goodreads_books)
-
-        print("FINISHED." + "="*30)
-        # print(asdict(goodreads_books[0]))
+        books = run(page, action)
+        print("="*30 + "Search Complete" + "="*30)
+        print(books)
 
         browser.close()
 
-        result = [asdict(book) for book in goodreads_books]
+        # serialize
+        results: list[dict] = serialize(books)
+        print(results)
 
-        print(result)
+        # format response for pushover integration
+        formatted_resp: str = format_notification(books)
 
-        return result
+        with open("formatted_response.txt", 'w', encoding="utf-8") as fr:
+            fr.write(formatted_resp)
+
+        return jsonify(results)
+
+
+
+def run(page: Page, action: str) -> list[dict]:
+    _setup_debug(page)
+
+    goodreads_books: list[Book] = []    
+
+    if action == "goodreads_update":
+        goodreads_login(page)
+        goodreads_books = scrape_books(page)
+
+    elif action == "search":
+        file = open("goodreads_books.json","r", encoding="utf-8")
+        _books_list: list[Book] = [Book(book["title"], book["author"]) for book in json.load(file)]
+        goodreads_books.extend(_books_list)
+        file.close()
+
+    if not goodreads_books:
+        return "No books in want-to-read list."
+
+    if action == "search":
+        library_handler = Library(page)
+        library_handler.search_books(goodreads_books)
+
+
+    with open("search_results_unformatted.json", "w", encoding="utf-8") as output_file:
+        json.dump([asdict(book) for book in goodreads_books], output_file, ensure_ascii=False, indent=4)
+
+    return goodreads_books
+
+
+
+def serialize(books: list[Book]) -> list[dict]:
+    response = []
+    for book in books:
+        result = {} 
+
+        result['title'] = book.title
+        result['author'] = book.author
+
+        library_book = book.library_book
+
+        if not library_book:
+            result["library_book"] = None
+            response.append(result)
+            continue
+
+        result['match_type'] = library_book.match_type
+        result['library_title'] = library_book.title
+        result['library_author'] = library_book.author
+
+        libraries = library_book.libraries
+
+        total = 0
+        for location in libraries:
+            if location.available:
+                total += location.available_count
+
+        result['total available'] = total
+        result['libaries'] = [asdict(location) for location in libraries]
+
+        response.append(result)
+
+    return response
+
+
+
+def format_notification(books: list[Book]) -> str:
+    lines = []
+
+    for book in books:
+        lines.append(f"📚 {book.title}")
+        lines.append(f"{book.author}")
+
+        if not book.library_book:
+            lines.append("❌ Book not found.")
+            continue
+
+        if book.library_book.match_type == "close":
+            lines.append("≈ Close match")
+
+        elif book.library_book.match_type == "exact":
+            lines.append("✅ Exact match")
+
+        lines.append(f"{book.library_book.title}")
+        lines.append(f"{book.library_book.author}")
+        lines.append(f"{book.library_book.url}")
+
+        lines.append("\n")
+
+        for library in book.library_book.libraries:
+            location = library.location
+            count = library.available_count
+
+            lines.append(f"{location}")
+
+            for status, count in library.status.items():
+                lines.append(f"\t-{status}: {count}")
+
+            lines.append(f"Total available at {location}: {count}")
+
+        lines.append("\n")
+
+    return "\n".join(lines)
+
+
+
+        
+
+
+        
+
+
+
 
 if __name__ == "__main__":
     app.run('0.0.0.0', port=8080)
