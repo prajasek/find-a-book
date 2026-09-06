@@ -1,6 +1,6 @@
 from dataclasses import asdict
 
-from flask import Flask, send_file
+from flask import Flask, request
 from patchright.sync_api import Page, sync_playwright, expect, TimeoutError
 from book import Book
 from config import HEADLESS_MODE, SLOW_MO
@@ -16,7 +16,10 @@ app = Flask(__name__)
 @app.route("/<string:action>")
 def index(action):
 
-    print("Starting...")
+    if action not in {"search", "goodreads_update"}:
+        return "Not Found", 404
+
+    print(f"Starting...path={request.path}, action={action}")
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(
             headless=HEADLESS_MODE,
@@ -38,11 +41,12 @@ def index(action):
             goodreads_login(page)
             goodreads_books = scrape_books(page)
 
-        else:
+        elif action == "search":
             file = open("goodreads_books.json","r", encoding="utf-8")
             _books_list: list[Book] = [Book(book["title"], book["author"]) for book in json.load(file)]
             goodreads_books.extend(_books_list)
             file.close()
+  
 
 
         if not goodreads_books:
@@ -52,21 +56,23 @@ def index(action):
             library_handler = Library(page)
             library_handler.get_books_available(goodreads_books)
 
+
         with open("search_results.json", "w", encoding="utf-8") as output_file:
             json.dump([asdict(book) for book in goodreads_books], output_file, ensure_ascii=False, indent=4)
 
 
         print(goodreads_books)
 
+        print("FINISHED." + "="*30)
+        # print(asdict(goodreads_books[0]))
+
         browser.close()
 
+        result = [asdict(book) for book in goodreads_books]
 
+        print(result)
 
-
-    return send_file(
-            "goodreads_books.json", 
-            mimetype="application/json")
-
+        return result
 
 if __name__ == "__main__":
     app.run('0.0.0.0', port=8080)

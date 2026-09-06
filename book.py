@@ -7,19 +7,35 @@ from enum import Enum
 
 class BookStatus(Enum):
     CHECKED_OUT = "checked out"
-    ON_HOLD_1 = "on hold"
-    ON_HOLD_2 = "on holdshelf"
-    AVAILABLE_1 = "on shelf"
-    AVAILABLE_2 = "on-shelf"
-    AVAILABLE_3 = "recently returned"
+    ON_HOLD = "on hold"
+    ON_HOLDSHELF = "on holdshelf"
+    ON_SHELF = "on shelf"
+    ON_SHELF_HYPHEN = "on-shelf"
+    RECENTLY_RETURNED = "recently returned"
 
 
 @dataclass
 class LibraryLocation:
     location: str
-    book_count: int = 0
-    status: Literal["on_hold", "available"] | None = None
+    status: dict[str, int] = field(default_factory=dict)
 
+    @property
+    def available_count(self) -> int:
+        available_filter: list[int] = [
+                self.status.get(status.value, 0)        
+                for status in (
+                    BookStatus.ON_SHELF,
+                    BookStatus.ON_SHELF_HYPHEN,
+                    BookStatus.RECENTLY_RETURNED,
+                )
+            ]
+        return sum(available_filter)
+
+    @property
+    def available(self) -> bool:
+        return self.available_count > 0
+
+    
 
 @dataclass
 class LibraryBook:
@@ -35,6 +51,7 @@ class LibraryBook:
     def __post_init__(self):
         self.normalized_title = _normalize_title(self.title)
         self.normalized_author = _normalize_author(self.author)
+
 
 
 
@@ -54,4 +71,10 @@ class Book:
 
     @property
     def total_available(self) -> int:
-        return sum(library.book_count for library in self.library_book.libraries)
+        if not self.library_book:
+            return 0
+        
+        return sum(
+            library.book_count 
+            for library in self.library_book.libraries
+        )

@@ -7,3 +7,5 @@ SLOW_MO=None
 SCREENSHOTS_DIR="screenshots"
 
 TARGET_LIBRARIES = ["Chester County Library", "Henrietta Hankin Library"]
+
+TIMEOUT = 2000
