@@ -1,11 +1,14 @@
 from dataclasses import asdict
 import re
 import json
-from patchright.sync_api import Locator, Page, sync_playwright, expect, TimeoutError
+from patchright.sync_api import Locator, Page, Response, sync_playwright, expect, TimeoutError
 from book import Book, LibraryBook, LibraryLocation
-from config import LIBRARY_URL, TARGET_LIBRARIES, TIMEOUT, LONG_TIMEOUT, DEBUG_MODE
+from config import LIBRARY_URL, LONG_LONG_TIMEOUT, TARGET_LIBRARIES, TIMEOUT, LONG_TIMEOUT, DEBUG_MODE
+from time import perf_counter
 
+from helpers import log_time
 
+timer = {}
 
 class Library:
     """
@@ -30,10 +33,13 @@ class Library:
 
     def _deal_with_cookies(self):
         modal = self.page.get_by_role("dialog", name="Privacy")
-        modal.wait_for(timeout=LONG_TIMEOUT)
-        self.page.screenshot(path="SCREENSHOTS_DIR/modal.png")
-        close_btn = modal.get_by_role("button", name="Close")
-        close_btn.click()
+        try:
+            modal.wait_for(timeout=LONG_LONG_TIMEOUT)
+            self.page.screenshot(path="SCREENSHOTS_DIR/modal.png")
+            close_btn = modal.get_by_role("button", name="Close")
+            close_btn.click()
+        except TimeoutError:
+            pass
 
 
 
@@ -84,21 +90,24 @@ class Library:
         locations_drawer_close = modal.locator('[data-automation-id="close-locations-drawer-btn"]')
                     
         try:
-            locations_drawer_close.wait_for(timeout=TIMEOUT)
-            locations_drawer_close.click()
+            print("checking books drawer")
+            book_drawer_close.wait_for(timeout=500)
+            book_drawer_close.click()
+            print("closed books drawer")
             return
+
         except TimeoutError:
             pass
 
         try:
-            book_drawer_close.wait_for(timeout=TIMEOUT)
-            book_drawer_close.click()
+            print("checking locations drawer")
+            locations_drawer_close.wait_for(timeout=500)
+            locations_drawer_close.click()
+            print("closed locations drawer")
             return
-        
+
         except TimeoutError as exc:
             raise TimeoutError("Could not close the modal window.") from exc
-
-        print("closed modal\n")
 
 
 
@@ -303,9 +312,15 @@ class Library:
         3. Check availability in target library locations.
         """
 
+        start_1 = perf_counter()
+
         print("START: check availability function")
         candidates: list[LibraryBook] = self._collect_search_results(target_book)
         print("Collected search results.")
+
+        timer["_collect_search_results"] = perf_counter() - start_1
+
+        start_2 = perf_counter()
 
         if not candidates:
             print(f"Zero candidates for {target_book.title}.")
@@ -314,6 +329,9 @@ class Library:
         # possible matching book found in search results
         print("Finding match...")
         matching_library_book: LibraryBook = self._find_match(candidates, target_book)
+
+        timer["_find_match"] = perf_counter() - start_2
+
 
         # search candidates available but no match found.
         if not matching_library_book:
@@ -324,7 +342,14 @@ class Library:
 
         target_book.library_book = matching_library_book
 
+        start_3 = perf_counter()
+
         self._update_available_locations(target_book)
+
+        timer["_update_available_locations"] = perf_counter() - start_3
+
+        log_time(timer, target_book)
+
         return True
 
 
@@ -348,24 +373,32 @@ class Library:
 
 
     def _apply_format_filters(self, book_format: str):
+        print("Format section...")
         side_panel = self.page.get_by_role("region", name="Refine Results")
-        side_panel.wait_for()
+        side_panel.wait_for(timeout=TIMEOUT)
 
         format_section = side_panel.locator(
             '[data-automation-id="FORMATS"]'
             )
-
-        if format_section.count() == 0:
+        
+        try:
+            format_section.wait_for(timeout=TIMEOUT)
+        except TimeoutError:
             return False
-
+        
         # get Format section
-        format_dropdown_button = format_section.get_by_role("button").first
+        format_dropdown_button = format_section.get_by_role("button")
 
+        try:
+            format_dropdown_button.first.wait_for(timeout=TIMEOUT)
+        except TimeoutError:
+            return False
+        
         # get format group - {BOOK, AUDIOBOOK, EBOOK}
         format_group = side_panel.get_by_role(
             "group", name=re.compile(r"^format")
             )
-        
+
         # get the checkbox for the desired format (BOOK)
         book_checkbox = format_group.locator(
             '[data-automation-id="facet-checkbox"]'
@@ -373,17 +406,34 @@ class Library:
                 has_text=re.compile(fr"^{book_format}")
             )
 
-        # open drop-down if not already opened
-        if not book_checkbox.is_visible():
-            format_dropdown_button.click()
-        
+        # If checkbox is not visible, try opening the format section 
+        # and check again
         try:
-            book_checkbox.wait_for(state="visible", timeout=LONG_TIMEOUT)
+            book_checkbox.wait_for(state="visible", timeout=TIMEOUT)
+            print("Book format selected.")
         except TimeoutError:
-            return False
+            try:
+                print("Open dropdown if not visible")
+                format_dropdown_button.click()
 
+                book_checkbox.wait_for(state="visible", timeout=TIMEOUT)
+                print("Book format selected.")
+            except TimeoutError:
+                return False
+  
+        print("Trying to click book checkbox")
         book_checkbox.click()
+        
         return True
+
+
+    def _has_format_results(self, response_info: Response) -> bool:
+        """
+        Check if format material_type API returned any results.
+        """
+        response_body = response_info.value.json()
+
+        return response_body.get("totalResults", 0)
 
 
 
@@ -393,11 +443,25 @@ class Library:
     
         self.searchbar.wait_for(timeout=TIMEOUT)
         self.searchbar.fill(book.title)
-        self.searchbar.press("Enter")
+
+        # Wait for 'material_type' API response that responds with available formats for the book.
+        # Anything will 0 results => no formats available, we can skip to next book.
+        with self.page.expect_response(
+                lambda response: "material_Type" in response.url 
+                and response.request.method == "POST"
+                and response.status == 200
+            ) as response_info:
+            self.searchbar.press("Enter")
+
+
+        if not self._has_format_results(response_info):
+            return False, f"No copies available for {book.title}."
+        
 
         # Book not available in requested format Ex: "BOOK"
         if not self._apply_format_filters("BOOK"):
             return False, f"Book format not available for {book.title}."
+
 
         # Check search results status
         # Ex: 12 results shown, 0 results found, 1 result found
@@ -443,12 +507,14 @@ class Library:
 
         self._get_fresh_search_session()
 
+        timer_start = perf_counter()
+
         for book in books:
             for attempt in range(2):
                 try:
                     # handle normal failure like 0 books hits, or BOOK format not available
                     status, msg = self._search_book(book)
-                    print(status, msg)
+                    print(f"MESSAGE: {msg}\n")
                     break
 
                 except TimeoutError:
@@ -459,5 +525,8 @@ class Library:
 
                     self._get_fresh_search_session()
 
-                    
+
+        timer_end = perf_counter() - timer_start
+
+        print("TIME:" , timer_end)
 

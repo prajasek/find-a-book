@@ -1,6 +1,8 @@
 import json
+import cProfile
+import pstats
 from dataclasses import asdict
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_file
 from patchright.sync_api import Page, sync_playwright, expect, TimeoutError
 from book import Book
 from config import HEADLESS_MODE, SLOW_MO
@@ -13,12 +15,15 @@ app = Flask(__name__)
 
 
 
-@app.route("/<string:action>")
-def index(action):
+@app.route("/<string:action>/<string:rtype>")
+def index(action, rtype):
 
     if action not in {"search", "goodreads_update"}:
         return "Not Found", 404
 
+    if rtype not in {"text", "json"}:
+            return "Not Found", 404
+    
     print(f"Starting...path={request.path}, action={action}")
     
     with sync_playwright() as playwright:
@@ -35,7 +40,13 @@ def index(action):
 
         page = browser.new_page()
 
-        books = run(page, action)
+        with cProfile.Profile() as profiler:
+            books = run(page, action)
+
+        stats = pstats.Stats(profiler)
+        stats.sort_stats("cumulative")
+        stats.print_stats(30)
+    
         print("="*30 + "Search Complete" + "="*30)
         print(books)
 
@@ -51,7 +62,10 @@ def index(action):
         with open("formatted_response.txt", 'w', encoding="utf-8") as fr:
             fr.write(formatted_resp)
 
-        return jsonify(results)
+        if rtype == "text":
+            return send_file("formatted_response.txt")
+        else:
+            return jsonify(results)
 
 
 
@@ -126,9 +140,9 @@ def format_notification(books: list[Book]) -> str:
     for book in books:
         lines.append(f"📚 {book.title}")
         lines.append(f"{book.author}")
-
         if not book.library_book:
             lines.append("❌ Book not found.")
+            lines.append("\n")
             continue
 
         if book.library_book.match_type == "close":
@@ -137,34 +151,34 @@ def format_notification(books: list[Book]) -> str:
         elif book.library_book.match_type == "exact":
             lines.append("✅ Exact match")
 
+        lines.append("")
+        lines.append("Library Book:")
         lines.append(f"{book.library_book.title}")
         lines.append(f"{book.library_book.author}")
         lines.append(f"{book.library_book.url}")
 
-        lines.append("\n")
+        lines.append("")
 
-        for library in book.library_book.libraries:
+        libraries = book.library_book.libraries
+
+        if not libraries:
+            lines.append("{No copies available anywhere.}")
+
+        for library in libraries:
             location = library.location
-            count = library.available_count
+            total_available = library.available_count
 
             lines.append(f"{location}")
 
             for status, count in library.status.items():
                 lines.append(f"\t-{status}: {count}")
 
-            lines.append(f"Total available at {location}: {count}")
+            lines.append(f"Total available at {location}: {total_available}")
+            lines.append("")
 
         lines.append("\n")
 
     return "\n".join(lines)
-
-
-
-        
-
-
-        
-
 
 
 

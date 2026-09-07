@@ -22,7 +22,7 @@ class LibraryLocation:
     @property
     def available_count(self) -> int:
         available_filter: list[int] = [
-                self.status.get(status.value, 0)        
+                self.status.get(status.value, 0)     
                 for status in (
                     BookStatus.ON_SHELF,
                     BookStatus.ON_SHELF_HYPHEN,
