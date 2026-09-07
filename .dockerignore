@@ -5,3 +5,4 @@ venv/
 __pycache__/
 *.png
 *.json
+time_logs.txt

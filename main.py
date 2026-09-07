@@ -1,11 +1,9 @@
 import json
-import cProfile
-import pstats
 from dataclasses import asdict
 from flask import Flask, jsonify, request, send_file
 from patchright.sync_api import Page, sync_playwright, expect, TimeoutError
 from book import Book
-from config import HEADLESS_MODE, SLOW_MO
+from config import DEBUG_MODE, HEADLESS_MODE, SLOW_MO
 from helpers import _setup_debug
 from goodreads import goodreads_login, scrape_books
 from library import Library
@@ -15,14 +13,12 @@ app = Flask(__name__)
 
 
 
-@app.route("/<string:action>/<string:rtype>")
-def index(action, rtype):
+@app.route("/<string:action>")
+def index(action):
 
-    if action not in {"search", "goodreads_update"}:
+    if action not in {"library", "goodreads", "run"}:
         return "Not Found", 404
 
-    if rtype not in {"text", "json"}:
-            return "Not Found", 404
     
     print(f"Starting...path={request.path}, action={action}")
     
@@ -40,60 +36,57 @@ def index(action, rtype):
 
         page = browser.new_page()
 
-        with cProfile.Profile() as profiler:
-            books = run(page, action)
-
-        stats = pstats.Stats(profiler)
-        stats.sort_stats("cumulative")
-        stats.print_stats(30)
+        books: list[Book] = run(page, action)
     
-        print("="*30 + "Search Complete" + "="*30)
+        print("="*30 + "Search Complete" + "="*100)
         print(books)
+        print("="*30 + "Search Complete" + "="*100)
 
         browser.close()
 
-        # serialize
-        results: list[dict] = serialize(books)
-        print(results)
+        # # serialize
+        # results: list[dict] = serialize(books)
+        # print(results)
 
         # format response for pushover integration
-        formatted_resp: str = format_notification(books)
+        if books:
+            formatted_resp: str = format_notification(books)
 
-        with open("formatted_response.txt", 'w', encoding="utf-8") as fr:
-            fr.write(formatted_resp)
+            with open("formatted_response.txt", 'w', encoding="utf-8") as fr:
+                fr.write(formatted_resp)
 
-        if rtype == "text":
+            print(formatted_resp)
             return send_file("formatted_response.txt")
-        else:
-            return jsonify(results)
+       
+        return "Book list empty", 404
 
 
 
-def run(page: Page, action: str) -> list[dict]:
+def run(page: Page, action: str) -> list[Book]:
     _setup_debug(page)
 
-    goodreads_books: list[Book] = []    
-
-    if action == "goodreads_update":
+    goodreads_books: list[Book] = []
+    
+    if action in {"goodreads", "run"}:
         goodreads_login(page)
         goodreads_books = scrape_books(page)
 
-    elif action == "search":
-        file = open("goodreads_books.json","r", encoding="utf-8")
-        _books_list: list[Book] = [Book(book["title"], book["author"]) for book in json.load(file)]
-        goodreads_books.extend(_books_list)
-        file.close()
-
     if not goodreads_books:
-        return "No books in want-to-read list."
+        return []
 
-    if action == "search":
+    if action in {"library", "run"}:
         library_handler = Library(page)
         library_handler.search_books(goodreads_books)
 
+    # elif action == "search" or action == "run":
+    #     file = open("goodreads_books.json","r", encoding="utf-8")
+    #     _books_list: list[Book] = [Book(book["title"], book["author"]) for book in json.load(file)]
+    #     goodreads_books.extend(_books_list)
+    #     file.close()
 
-    with open("search_results_unformatted.json", "w", encoding="utf-8") as output_file:
-        json.dump([asdict(book) for book in goodreads_books], output_file, ensure_ascii=False, indent=4)
+    if DEBUG_MODE:
+        with open("search_results_unformatted.json", "w", encoding="utf-8") as output_file:
+            json.dump([asdict(book) for book in goodreads_books], output_file, ensure_ascii=False, indent=4)
 
     return goodreads_books
 
@@ -102,7 +95,7 @@ def run(page: Page, action: str) -> list[dict]:
 def serialize(books: list[Book]) -> list[dict]:
     response = []
     for book in books:
-        result = {} 
+        result = {}
 
         result['title'] = book.title
         result['author'] = book.author

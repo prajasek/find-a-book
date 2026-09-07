@@ -1,7 +1,7 @@
 from dataclasses import asdict
 from patchright.sync_api import Page, expect, TimeoutError
 from book import Book
-from config import GOODREADS_SIGNIN
+from config import DEBUG_MODE, GOODREADS_HOMEPAGE, GOODREADS_SIGNIN
 from dotenv import load_dotenv
 import json
 import re
@@ -93,7 +93,8 @@ def _get_books(page) -> list[Book]:
 
     print(books)
 
-    _save_books(books)  # Save the books to a JSON file
+    if DEBUG_MODE:
+        _save_books(books)  # Save the books to a JSON file
 
     return books
 
@@ -106,6 +107,7 @@ def _save_books(books: list[Book]):
 
 
 def _navigate_to_want_to_read(page):
+    page.goto(GOODREADS_HOMEPAGE)
     page.get_by_role("link", name="My Books").click()
     page.get_by_role("link", name="Want to Read").click()
     page.get_by_role("link", name="table view").click()
@@ -122,14 +124,22 @@ def _sanity_footer_visibility_check(page):
 
 
 def scrape_books(page) -> list[Book]:
-    _navigate_to_want_to_read(page)
 
-    # scroll the want-to-read list until all books are loaded
-    if not _scroll_until_stable(page):
-        return []
+    for attempt in range(2):
+        try:
+            _navigate_to_want_to_read(page)
 
-    books: list[Book] = _get_books(page)
+            # scroll the want-to-read list until all books are loaded
+            if not _scroll_until_stable(page):
+                return []
 
-    _sanity_footer_visibility_check(page)
+            books: list[Book] = _get_books(page)
+            _sanity_footer_visibility_check(page)
+
+            break
+        except TimeoutError:
+            if attempt == 1:
+                print("Failed to get books from goodreads.")
+                raise
 
     return books

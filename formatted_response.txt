@@ -1,35 +1,279 @@
+📚 The Hobbit, or There and Back Again
+Tolkien, J.R.R.
+❌ Book not found.
+
+
+📚 The Handmaid's Tale
+Atwood, Margaret
+❌ Book not found.
+
+
+📚 The Body Keeps the Score: Brain, Mind, and Body in the Healing of Trauma
+Kolk, Bessel van der
+❌ Book not found.
+
+
+📚 Wild Dark Shore
+McConaghy, Charlotte
+❌ Book not found.
+
+
+📚 The Paris Apartment
+Foley, Lucy
+❌ Book not found.
+
+
+📚 None of This Is True
+Jewell, Lisa
+❌ Book not found.
+
+
+📚 The Girl Who Played with Fire (Millennium #2)
+Larsson, Stieg
+❌ Book not found.
+
+
+📚 The Dungeon Anarchist's Cookbook (Dungeon Crawler Carl, #3)
+Dinniman, Matt
+❌ Book not found.
+
+
+📚 The Checklist Manifesto: How to Get Things Right
+Gawande, Atul
+❌ Book not found.
+
+
+📚 Asimov's Guide to the Bible: The Old and New Testaments (2 Vol.)
+Asimov, Isaac
+❌ Book not found.
+
+
 📚 The Woman in the Window
 Finn, A.J.
-✅ Exact match
-
-Library Book:
-The woman in the window
-Finn, A. J.
-https://chesp.na.iiivega.com/search/card?id=66a43525-985f-53b4-a0e1-f9ae5a8ffd36&entityType=FormatGroup
-
-Chester County Library
-	-checked out: 1
-	-on shelf: 1
-Total available at Chester County Library: 1
-
+❌ Book not found.
 
 
 📚 On Writing: A Memoir of the Craft
 King, Stephen
-✅ Exact match
+❌ Book not found.
 
-Library Book:
-On writing : a memoir of the craft
-King, Stephen, 1947-
-https://chesp.na.iiivega.com/search/card?id=d0f57a4e-074b-5cbf-85eb-499ddd839680&entityType=FormatGroup
 
-Chester County Library
-	-checked out: 1
-	-on shelf: 1
-Total available at Chester County Library: 1
+📚 Born Standing Up: A Comic's Life
+Martin, Steve
+❌ Book not found.
 
-Henrietta Hankin Library
-	-on shelf: 1
-Total available at Henrietta Hankin Library: 1
 
+📚 Ordinary Men: Reserve Police Battalion 101 and the Final Solution in Poland
+Browning, Christopher R.
+❌ Book not found.
+
+
+📚 Childhood's End
+Clarke, Arthur C.
+❌ Book not found.
+
+
+📚 Blindsight (Firefall, #1)
+Watts, Peter
+❌ Book not found.
+
+
+📚 Rendezvous with Rama (Rama, #1)
+Clarke, Arthur C.
+❌ Book not found.
+
+
+📚 Total Recall: My Unbelievably True Life Story
+Schwarzenegger, Arnold
+❌ Book not found.
+
+
+📚 How Not to Die: Discover the Foods Scientifically Proven to Prevent and Reverse Disease
+Greger, Michael
+❌ Book not found.
+
+
+📚 Foundation (Foundation, #1)
+Asimov, Isaac
+❌ Book not found.
+
+
+📚 The Hitchhiker's Guide to the Galaxy (The Hitchhiker's Guide to the Galaxy, #1)
+Adams, Douglas
+❌ Book not found.
+
+
+📚 The Power of Habit: Why We Do What We Do in Life and Business
+Duhigg, Charles
+❌ Book not found.
+
+
+📚 The Stand
+King, Stephen
+❌ Book not found.
+
+
+📚 The Rise of Theodore Roosevelt (Theodore Roosevelt, #1)
+Morris, Edmund
+❌ Book not found.
+
+
+📚 Sapiens: A Brief History of Humankind
+Harari, Yuval Noah
+❌ Book not found.
+
+
+📚 Mastery
+Greene, Robert
+❌ Book not found.
+
+
+📚 Shoe Dog: A Memoir by the Creator of Nike
+Knight, Phil
+❌ Book not found.
+
+
+📚 Influence: The Psychology of Persuasion (Collins Business Essentials Book 16)
+Cialdini, Robert B.
+❌ Book not found.
+
+
+📚 Psycho-Cybernetics: A New Way to Get More Living Out of Life
+Maltz, Maxwell
+❌ Book not found.
+
+
+📚 The 48 Laws of Power
+Greene, Robert
+❌ Book not found.
+
+
+📚 Emotional Intelligence: Why It Can Matter More Than IQ
+Goleman, Daniel
+❌ Book not found.
+
+
+📚 How to Talk to Anyone: 92 Little Tricks for Big Success in Relationships
+Lowndes, Leil
+❌ Book not found.
+
+
+📚 Genius Foods: Become Smarter, Happier, and More Productive While Protecting Your Brain for Life
+Lugavere, Max
+❌ Book not found.
+
+
+📚 The Science of Likability: 27 Studies to Master Charisma, Attract Friends, Captivate People, and Take Advantage of Human Psychology
+King, Patrick
+❌ Book not found.
+
+
+📚 Never Split the Difference: Negotiating As If Your Life Depended On It
+Voss, Chris
+❌ Book not found.
+
+
+📚 Deep Nutrition: Why Your Genes Need Traditional Food
+Shanahan, Catherine
+❌ Book not found.
+
+
+📚 When Breath Becomes Air
+Kalanithi, Paul
+❌ Book not found.
+
+
+📚 Leonardo da Vinci
+Isaacson, Walter
+❌ Book not found.
+
+
+📚 Range: Why Generalists Triumph in a Specialized World
+Epstein, David
+❌ Book not found.
+
+
+📚 Why We Sleep: Unlocking the Power of Sleep and Dreams
+Walker, Matthew
+❌ Book not found.
+
+
+📚 The Diabetes Code: Prevent and Reverse Type 2 Diabetes Naturally
+Fung, Jason
+❌ Book not found.
+
+
+📚 Sphere
+Crichton, Michael
+❌ Book not found.
+
+
+📚 The Hot Zone: The Terrifying True Story of the Origins of the Ebola Virus
+Preston, Richard
+❌ Book not found.
+
+
+📚 The Gecko's Foot: Bio-inspiration: Engineering New Materials from Nature
+Forbes, Peter
+❌ Book not found.
+
+
+📚 The Equations of Life: How Physics Shapes Evolution
+Cockell, Charles S.
+❌ Book not found.
+
+
+📚 The Girl With the Dragon Tattoo (Millennium, #1)
+Larsson, Stieg
+❌ Book not found.
+
+
+📚 Elon Musk: Tesla, SpaceX, and the Quest for a Fantastic Future
+Vance, Ashlee
+❌ Book not found.
+
+
+📚 The Outsider (Holly Gibney, #1)
+King, Stephen
+❌ Book not found.
+
+
+📚 Fahrenheit 451
+Bradbury, Ray
+❌ Book not found.
+
+
+📚 The Memory Book: The Classic Guide to Improving Your Memory at Work, at School, and at Play
+Lorayne, Harry
+❌ Book not found.
+
+
+📚 1984
+Orwell, George
+❌ Book not found.
+
+
+📚 Liquid Rules: The Delightful and Dangerous Substances That Flow Through Our Lives
+Miodownik, Mark
+❌ Book not found.
+
+
+📚 Recursion
+Crouch, Blake
+❌ Book not found.
+
+
+📚 Stuff Matters: Exploring the Marvelous Materials That Shape Our Man-Made World
+Miodownik, Mark
+❌ Book not found.
+
+
+📚 The Pleasure Of Finding Things Out: The Best Short Works Of Richard Feynman
+Robbins, Jeffrey
+❌ Book not found.
+
+
+📚 A Short History of Nearly Everything
+Bryson, Bill
+❌ Book not found.
 

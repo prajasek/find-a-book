@@ -3,9 +3,9 @@ import unicodedata
 from patchright.sync_api import Page
 from config import VIEWPORT
 
-# clear the log file for each run
-file = open("time_logs.txt", 'w')
-file.close()
+# # clear the log file for each run
+# file = open("time_logs.txt", 'w')
+# file.close()
 
 
 def _setup_debug(page: Page):
@@ -119,16 +119,16 @@ def _normalize_author(author):
         return normalized_author
 
 
-def log_time(timer, book):
+# def log_time(timer, book):
 
-        lines = []
-        lines.append(f"{book.title}")
-        with open("time_logs.txt", "a") as file:
-                for func, s in timer.items():
-                        lines.append(f"{func}: {s} seconds.")
+#         lines = []
+#         lines.append(f"{book.title}")
+#         with open("time_logs.txt", "a") as file:
+#                 for func, s in timer.items():
+#                         lines.append(f"{func}: {s} seconds.")
 
-                lines.append("\n")
-                file.write("\n".join(lines))
+#                 lines.append("\n")
+#                 file.write("\n".join(lines))
 
 
 

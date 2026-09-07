@@ -4,11 +4,8 @@ import json
 from patchright.sync_api import Locator, Page, Response, sync_playwright, expect, TimeoutError
 from book import Book, LibraryBook, LibraryLocation
 from config import LIBRARY_URL, LONG_LONG_TIMEOUT, TARGET_LIBRARIES, TIMEOUT, LONG_TIMEOUT, DEBUG_MODE
-from time import perf_counter
+# from helpers import log_time
 
-from helpers import log_time
-
-timer = {}
 
 class Library:
     """
@@ -111,7 +108,7 @@ class Library:
 
 
 
-    def _check_availability_at(self, target_locations: list[LibraryLocation], target_book: Book) -> bool:
+    def _check_availability_at(self, target_locations: list[LibraryLocation], target_book: Book):
         """ 
         Check each library location for book availability.      
         """
@@ -173,7 +170,7 @@ class Library:
 
 
 
-    def _update_available_locations(self, target_book: Book) -> bool:
+    def _update_available_locations(self, target_book: Book):
         """ Check target libraries for availability       
         """
 
@@ -312,15 +309,9 @@ class Library:
         3. Check availability in target library locations.
         """
 
-        start_1 = perf_counter()
-
         print("START: check availability function")
         candidates: list[LibraryBook] = self._collect_search_results(target_book)
         print("Collected search results.")
-
-        timer["_collect_search_results"] = perf_counter() - start_1
-
-        start_2 = perf_counter()
 
         if not candidates:
             print(f"Zero candidates for {target_book.title}.")
@@ -329,8 +320,6 @@ class Library:
         # possible matching book found in search results
         print("Finding match...")
         matching_library_book: LibraryBook = self._find_match(candidates, target_book)
-
-        timer["_find_match"] = perf_counter() - start_2
 
 
         # search candidates available but no match found.
@@ -342,13 +331,7 @@ class Library:
 
         target_book.library_book = matching_library_book
 
-        start_3 = perf_counter()
-
         self._update_available_locations(target_book)
-
-        timer["_update_available_locations"] = perf_counter() - start_3
-
-        log_time(timer, target_book)
 
         return True
 
@@ -507,8 +490,6 @@ class Library:
 
         self._get_fresh_search_session()
 
-        timer_start = perf_counter()
-
         for book in books:
             for attempt in range(2):
                 try:
@@ -524,9 +505,3 @@ class Library:
                         print(f"Search for {book.title} failed. Moving on to next book...")
 
                     self._get_fresh_search_session()
-
-
-        timer_end = perf_counter() - timer_start
-
-        print("TIME:" , timer_end)
-

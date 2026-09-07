@@ -1,0 +1,10 @@
+The Woman in the Window
+_collect_search_results: 2.1710831000236794 seconds.
+_find_match: 7.670000195503235e-05 seconds.
+_update_available_locations: 7.122021300019696 seconds.
+
+On Writing: A Memoir of the Craft
+_collect_search_results: 2.7282829000614583 seconds.
+_find_match: 0.00012129999231547117 seconds.
+_update_available_locations: 8.996288999915123 seconds.
+
