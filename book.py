@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Literal
-from helpers import _normalize_title, _normalize_author
+from _helpers import _normalize_title, _normalize_author
 from enum import Enum
 
 
@@ -22,8 +22,8 @@ class LibraryLocation:
     @property
     def available_count(self) -> int:
         available_filter: list[int] = [
-                self.status.get(status.value, 0)     
-                for status in (
+                self.status.get(state.value, 0)     
+                for state in (
                     BookStatus.ON_SHELF,
                     BookStatus.ON_SHELF_HYPHEN,
                     BookStatus.RECENTLY_RETURNED,
@@ -75,6 +75,6 @@ class Book:
             return 0
         
         return sum(
-            library.book_count 
+            library.available_count
             for library in self.library_book.libraries
         )

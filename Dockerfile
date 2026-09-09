@@ -16,4 +16,4 @@ COPY . .
 
 EXPOSE 8080
 
-CMD ["xvfb-run", "--auto-servernum", "python", "main.py"]
+CMD ["sh", "-c", "Xvfb :99 -screen 0 1440x900x24 & export DISPLAY=:99 && exec python main.py"]

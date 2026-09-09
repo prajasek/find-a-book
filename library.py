@@ -32,7 +32,6 @@ class Library:
         modal = self.page.get_by_role("dialog", name="Privacy")
         try:
             modal.wait_for(timeout=LONG_LONG_TIMEOUT)
-            self.page.screenshot(path="SCREENSHOTS_DIR/modal.png")
             close_btn = modal.get_by_role("button", name="Close")
             close_btn.click()
         except TimeoutError:

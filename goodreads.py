@@ -1,24 +1,21 @@
-from dataclasses import asdict
-from patchright.sync_api import Page, expect, TimeoutError
-from book import Book
-from config import DEBUG_MODE, GOODREADS_HOMEPAGE, GOODREADS_SIGNIN
-from dotenv import load_dotenv
 import json
 import re
 import os
+from dataclasses import asdict
+from dotenv import load_dotenv
+from patchright.sync_api import Page, expect, TimeoutError
+from book import Book
+from config import DEBUG_MODE, GOODREADS_HOMEPAGE, GOODREADS_SIGNIN
+from _helpers import _normalize_before_search
 
-from helpers import _normalize_before_search
 
-
-load_dotenv()  
-
+load_dotenv()
 
 
 def goodreads_login(page: Page):
     print("Attempting Login...")
     page.goto(GOODREADS_SIGNIN)
     page.get_by_role("button", name="Sign in with email").click()
-    page.screenshot(path="goodreads_login_page.png")
 
     page.get_by_role("textbox", name="Email").fill(os.getenv("GOODREADS_USER"))
     page.get_by_role("textbox", name="Password").fill(os.getenv("GOODREADS_PASSWORD"))
@@ -26,8 +23,7 @@ def goodreads_login(page: Page):
 
     expect(page.get_by_role("main")).to_be_visible()
 
-    page.screenshot(path="goodreads_logged_in.png")
-    print("Login Function Ended...")
+    print("Login successful.")
 
 
 
@@ -119,14 +115,16 @@ def _sanity_footer_visibility_check(page):
     """
     footer = page.get_by_role("contentinfo")
     expect(footer).to_be_visible()
-    page.screenshot(path="goodreads_my_books_page.png")
 
 
 
-def scrape_books(page) -> list[Book]:
+def get_goodreads_books(page) -> list[Book]:
 
+    goodreads_login(page)   
+    
     for attempt in range(2):
         try:
+            
             _navigate_to_want_to_read(page)
 
             # scroll the want-to-read list until all books are loaded
