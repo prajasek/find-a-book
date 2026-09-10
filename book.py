@@ -4,7 +4,6 @@ from _helpers import _normalize_title, _normalize_author
 from enum import Enum
 
 
-
 class BookStatus(Enum):
     CHECKED_OUT = "checked out"
     ON_HOLD = "on hold"
@@ -22,20 +21,19 @@ class LibraryLocation:
     @property
     def available_count(self) -> int:
         available_filter: list[int] = [
-                self.status.get(state.value, 0)     
-                for state in (
-                    BookStatus.ON_SHELF,
-                    BookStatus.ON_SHELF_HYPHEN,
-                    BookStatus.RECENTLY_RETURNED,
-                )
-            ]
+            self.status.get(state.value, 0)
+            for state in (
+                BookStatus.ON_SHELF,
+                BookStatus.ON_SHELF_HYPHEN,
+                BookStatus.RECENTLY_RETURNED,
+            )
+        ]
         return sum(available_filter)
 
     @property
     def available(self) -> bool:
         return self.available_count > 0
 
-    
 
 @dataclass
 class LibraryBook:
@@ -53,8 +51,6 @@ class LibraryBook:
         self.normalized_author = _normalize_author(self.author)
 
 
-
-
 @dataclass
 class Book:
     title: str
@@ -64,7 +60,6 @@ class Book:
     goodreads_url: str | None = None
     library_book: LibraryBook | None = None
 
-
     def __post_init__(self):
         self.normalized_title = _normalize_title(self.title)
         self.normalized_author = _normalize_author(self.author)
@@ -73,8 +68,5 @@ class Book:
     def total_available(self) -> int:
         if not self.library_book:
             return 0
-        
-        return sum(
-            library.available_count
-            for library in self.library_book.libraries
-        )
+
+        return sum(library.available_count for library in self.library_book.libraries)

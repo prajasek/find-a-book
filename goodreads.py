@@ -8,7 +8,6 @@ from book import Book
 from config import DEBUG_MODE, GOODREADS_HOMEPAGE, GOODREADS_SIGNIN
 from _helpers import _normalize_before_search
 
-
 load_dotenv()
 
 
@@ -26,7 +25,6 @@ def goodreads_login(page: Page):
     print("Login successful.")
 
 
-
 def _scroll_until_stable(page):
     books_table = page.locator("#booksBody > tr")
 
@@ -41,9 +39,7 @@ def _scroll_until_stable(page):
 
         # 10 of 30  loaded, 30 of 30  loaded
         books_load_status = (
-            page.locator("#pagestuff #infiniteStatus")
-            .text_content()
-            .strip()
+            page.locator("#pagestuff #infiniteStatus").text_content().strip()
         )
 
         # 40 of 50 loaded => ('40', '50')
@@ -64,7 +60,6 @@ def _scroll_until_stable(page):
     return True
 
 
-
 def _get_books(page) -> list[Book]:
     # locator
     books_table = page.locator("#booksBody > tr").all()
@@ -81,8 +76,7 @@ def _get_books(page) -> list[Book]:
         normalized_author_pre_search = _normalize_before_search(author)
 
         _book = Book(
-            title=normalized_title_pre_search,
-            author=normalized_author_pre_search
+            title=normalized_title_pre_search, author=normalized_author_pre_search
         )
 
         books.append(_book)
@@ -95,11 +89,9 @@ def _get_books(page) -> list[Book]:
     return books
 
 
-
 def _save_books(books: list[Book]):
     with open("goodreads_books.json", "w", encoding="utf-8") as file:
         json.dump([asdict(book) for book in books], file, ensure_ascii=False, indent=4)
-
 
 
 def _navigate_to_want_to_read(page):
@@ -110,21 +102,17 @@ def _navigate_to_want_to_read(page):
 
 
 def _sanity_footer_visibility_check(page):
-    """ Sanity check to ensure the footer is visible 
-        after loading all books.
+    """Sanity check to ensure the footer is visible
+    after loading all books.
     """
     footer = page.get_by_role("contentinfo")
     expect(footer).to_be_visible()
 
 
-
 def get_goodreads_books(page) -> list[Book]:
 
-    goodreads_login(page)   
-    
     for attempt in range(2):
         try:
-            
             _navigate_to_want_to_read(page)
 
             # scroll the want-to-read list until all books are loaded

@@ -1,4 +1,4 @@
-from helpers import _normalize_author, _normalize_title
+from _helpers import _normalize_author, _normalize_title
 import pytest
 
 @pytest.mark.parametrize("author, expected",
