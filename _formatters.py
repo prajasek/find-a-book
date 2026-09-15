@@ -9,8 +9,8 @@ def format_want_to_read_books(books: list[Book]) -> str:
         lines = []
         lines.append("Goodreads Want-to-Read List")
         lines.append("----------------------------")
-        for book in books:
-                lines.append(f"• {book.title} - {book.author}")
+        for index, book in enumerate(books, 1):
+                lines.append(f"{index}. {book.title} - {book.author}")
                 
 
         return "\n".join(lines)

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>FindABook App</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='search.css') }}"
+    >
+</head>
+
+<body>
+
+    <main class="container">
+
+        <h1>FindABook</h1>
+
+        <!-- Navigation / Actions -->
+        <section class="actions">
+            <form id="home" action="/" method="get">
+                <button type="submit">🏠 Home </button>
+            </form>
+            <form id="goodreads-form" action="/goodreads" method="get">
+                <button type="submit">Get Want-to-Read List</button>
+            </form>
+
+            <form id="library-form" action="/library" method="get">
+                <button type="submit">Search Library for Watchlist</button>
+            </form>
+
+
+        </section>
+
+
+        <!-- Manual Book Search -->
+        <section class="search-section">
+
+            <label class="modern-text">
+                Search a book
+            </label>
+
+            <form
+                id="search-form"
+                action="/search"
+                method="get"
+                class="search-form"
+            >
+
+                <input
+                    type="text"
+                    id="title"
+                    name="title"
+                    placeholder="Title"
+                    autocomplete="off"
+                    required
+                >
+
+                <input
+                    type="text"
+                    id="author"
+                    name="author"
+                    placeholder="Author"
+                    autocomplete="off"
+                    required
+                >
+
+                <button type="submit">
+                    Search
+                </button>
+
+            </form>
+
+        </section>
+
+
+        <!-- Results -->
+        <section
+            id="results-section"
+            class="results-section"
+        >
+
+            <h2>Results</h2>
+            <span id="loader" class="hidden-loader">Loading</span>
+
+            <div
+                id="results"
+                class="results-container">
+            </div>
+
+        </section>
+
+    </main>
+<script src="{{ url_for('static', filename='search.js') }}"></script>
+
+</body>
+</html>

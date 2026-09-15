@@ -6,3 +6,4 @@ __pycache__/
 *.png
 *.json
 time_logs.txt
+SEARCH_RESULTS/

@@ -1,3 +1,5 @@
+from datetime import datetime
+import hashlib
 import re
 import unicodedata
 from patchright.sync_api import Page
@@ -118,3 +120,14 @@ def _normalize_author(author):
         normalized_author = " ".join(words_in_name)
 
         return normalized_author
+
+
+#### TIME ###########################################
+
+def _delta_hours(before, now):
+
+        if type(before) == str:
+               before = datetime.fromisoformat(before)
+        if type(now) == str:
+               now = datetime.fromisoformat(now)
+        return (now - before).total_seconds() / 3600
