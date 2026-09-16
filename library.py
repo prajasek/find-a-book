@@ -67,7 +67,7 @@ class Library:
         - CHECKED OUT
         etc...
         """
-        #print(f"Updating book availability at {library.location}.\n")
+        print(f"Updating book availability at {library.location}.\n")
         items = self.page.locator('[data-automation-id="item-info"]')
         try:
             items.first.wait_for(timeout=TIMEOUT)
@@ -81,7 +81,7 @@ class Library:
                 .strip()
                 .lower()
             )
-            #print(f"Item: {item_info}: {status_text}")
+            print(f"Item: {item_info}: {status_text}")
 
             library.status[status_text] = library.status.get(status_text, 0) + 1
 
@@ -90,7 +90,7 @@ class Library:
     def _close_modal_if_visible(self):
         # If modal is open, close it
 
-        #print("\ncheck if modal open.")
+        print("\ncheck if modal open.")
         modal = self.page.locator(".modal-content").filter(visible=True)
 
         if not modal.count():
@@ -103,20 +103,20 @@ class Library:
         )
 
         try:
-            #print("checking books drawer")
+            print("checking books drawer")
             book_drawer_close.wait_for(timeout=500)
             book_drawer_close.click()
-            #print("closed books drawer")
+            print("closed books drawer")
             return
 
         except TimeoutError:
             pass
 
         try:
-            #print("checking locations drawer")
+            print("checking locations drawer")
             locations_drawer_close.wait_for(timeout=500)
             locations_drawer_close.click()
-            #print("closed locations drawer")
+            print("closed locations drawer")
             return
 
         except TimeoutError as exc:
@@ -129,7 +129,7 @@ class Library:
         Check each library location for book availability.
         """
         for library in target_locations:
-            #print(f"Checking library location: {library.location}")
+            print(f"Checking library location: {library.location}")
 
             self._close_modal_if_visible()
 
@@ -143,14 +143,14 @@ class Library:
             except TimeoutError as e:
                 raise e
 
-            #print("Clicking all locations.\n")
+            print("Clicking all locations.\n")
             all_locations_locator.click()
             locations_search_input = self.page.locator(
                 '[data-automation-id="locations-search-input"]'
             )
             locations_search_input.wait_for()
 
-            #print("Entering location search.\n")
+            print("Entering location search.\n")
             locations_search_input.fill(library.location)
             locations_search_input.press("Enter")
 
@@ -179,7 +179,7 @@ class Library:
 
                 location_text: str = location_link.text_content()
 
-                #print(f"Checking location: {location_text} \n")
+                print(f"Checking location: {location_text} \n")
 
                 if library.location.lower().strip() == location_text.lower().strip():
                     location_link.click()
@@ -199,16 +199,16 @@ class Library:
         # the library website is sometimes laggy
         for attempt in range(2):
             try:
-                #print(f"Navigating to book url for {target_book.title}: {target_book.library_book.url}")
+                print(f"Navigating to book url for {target_book.title}: {target_book.library_book.url}")
          
                 self._navigate(target_book.library_book.url)
                 self._check_availability_at(target_locations, target_book)
                 break
 
             except TimeoutError:
-                #print(f"TimeoutError. Retrying location search for {target_book.title}.")
+                print(f"TimeoutError. Retrying location search for {target_book.title}.")
                 if attempt == 1:
-                    #print(f"Location search for {target_book.title} failed.")
+                    print(f"Location search for {target_book.title} failed.")
                     raise
 
     def _is_exact_match(self, candidate: LibraryBook, target_book: Book) -> bool:
@@ -257,7 +257,7 @@ class Library:
         """Get title, author, url from each card panel from
         search results and return a LibraryBook.
         """
-        #print("Extracting info")
+        print("Extracting info")
 
         title_locator = card.locator('[data-automation-id="search-card-title"]')
         author_locator = card.locator('[data-automation-id="author"]')
@@ -286,7 +286,7 @@ class Library:
         """Collect all search results from first page, and
         return list of LibraryBook candidates.
         """
-        #print(f"-------Collecting search results for {target_book.title}-------------")
+        print(f"-------Collecting search results for {target_book.title}-------------")
 
         candidates: list[LibraryBook] = []
         candidate_book_cards = self.page.locator('[data-automation-id="search-card"]')
@@ -306,18 +306,18 @@ class Library:
             if library_book:
                 candidates.append(library_book)
 
-        if DEBUG_MODE:
-            with open(
-                f"SEARCH_RESULTS/results_{target_book.normalized_title}.json",
-                "w",
-                encoding="utf-8",
-            ) as file:
-                json.dump(
-                    [asdict(book) for book in candidates],
-                    file,
-                    ensure_ascii=False,
-                    indent=4,
-                )
+        # if DEBUG_MODE:
+        #     with open(
+        #         f"SEARCH_RESULTS/results_{target_book.normalized_title}.json",
+        #         "w",
+        #         encoding="utf-8",
+        #     ) as file:
+        #         json.dump(
+        #             [asdict(book) for book in candidates],
+        #             file,
+        #             ensure_ascii=False,
+        #             indent=4,
+        #         )
 
         return candidates
 
@@ -328,24 +328,24 @@ class Library:
         3. Check availability in target library locations.
         """
 
-        #print("START: check availability function")
+        print("START: check availability function")
         candidates: list[LibraryBook] = self._collect_search_results(target_book)
-        #print("Collected search results.")
+        print("Collected search results.")
 
         if not candidates:
-            #print(f"Zero candidates for {target_book.title}.")
+            print(f"Zero candidates for {target_book.title}.")
             return False
 
         # possible matching book found in search results
-        #print("Finding match...")
+        print("Finding match...")
         matching_library_book: LibraryBook = self._find_match(candidates, target_book)
 
         # search candidates available but no match found.
         if not matching_library_book:
-            #print(f"No match found for {target_book.title}.")
+            print(f"No match found for {target_book.title}.")
             return False
 
-        #print(f" --> Found matching book for {target_book.title}:{matching_library_book}\n")
+        print(f" --> Found matching book for {target_book.title}:{matching_library_book}\n")
 
         target_book.library_book = matching_library_book
 
@@ -355,7 +355,7 @@ class Library:
 
     def _get_search_results_count(self, status_msg: Locator):
         if not status_msg.count():
-            #print("not status_msg")
+            print("not status_msg")
             return 0
 
         # Ex: 12 results shown, 0 results found, 1 result found
@@ -368,7 +368,7 @@ class Library:
         return int(match.group(1))
 
     def _apply_format_filters(self, book_format: str):
-        #print("Format section...")
+        print("Format section...")
         side_panel = self.page.get_by_role("region", name="Refine Results")
         side_panel.wait_for(timeout=TIMEOUT)
 
@@ -399,18 +399,18 @@ class Library:
         # and check again
         try:
             book_checkbox.wait_for(state="visible", timeout=TIMEOUT)
-            #print("Book format selected.")
+            print("Book format selected.")
         except TimeoutError:
             try:
-                #print("Open dropdown if not visible")
+                print("Open dropdown if not visible")
                 format_dropdown_button.click()
 
                 book_checkbox.wait_for(state="visible", timeout=TIMEOUT)
-                #print("Book format selected.")
+                print("Book format selected.")
             except TimeoutError:
                 return False
 
-        #print("Trying to click book checkbox")
+        print("Trying to click book checkbox")
         book_checkbox.click()
 
         return True
@@ -425,7 +425,7 @@ class Library:
 
     def _search_book(self, book: Book) -> tuple[bool, str]:
 
-        #print(f"SEARCHING ----------  {book.title}")
+        print(f"SEARCHING ----------  {book.title}")
 
         self.searchbar.wait_for(timeout=TIMEOUT)
         self.searchbar.fill(book.title)
@@ -452,7 +452,7 @@ class Library:
         search_status.wait_for()
         search_hits_count = self._get_search_results_count(search_status)
 
-        #print(f"Search count: {search_hits_count} ")
+        print(f"Search count: {search_hits_count} ")
 
         # search returned 0 books, continue to next book
         if search_hits_count == 0:
@@ -487,7 +487,7 @@ class Library:
                 break
 
             except TimeoutError:
-                #print("Failed to initialize search session. Retrying...")
+                print("Failed to initialize search session. Retrying...")
 
                 if attempt == 1:
                     raise

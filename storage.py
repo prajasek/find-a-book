@@ -32,9 +32,32 @@ from _helpers import _delta_hours
 
 class Storage:
 
+
+        def _save_books(self, books: list[dict]):
+                with open(BOOKS_FILE, 'w') as file:
+                        json.dump(books, file, ensure_ascii=False, indent=4)
+
+
+        def _get_stored_books(self) -> list[dict]:
+            try:
+                with open(BOOKS_FILE, 'r') as file:
+                    books = json.load(file)
+                    return books
+            except FileNotFoundError:
+                   f = open(BOOKS_FILE, 'w')
+                   f.close()
+                   return []
+            except: 
+                   return []
+
+
         def _stored_books_by_id(self):
                 stored_books = self._get_stored_books()
-                return {_["id"]: _ for _ in stored_books}
+                return {
+                       _book["id"]:_book
+                        for _book in stored_books
+                }
+
 
 
         def _get_recently_added_books(self, books: list[dict], hrs: float = NEW_BOOK_THRESHOLD_HRS):
@@ -85,7 +108,7 @@ class Storage:
                 stored_by_ids = self._stored_books_by_id()
             
                 for book in books:
-                        # Pre-existing books. Add them back
+                        # Pre-existing books. Add them back.
                         if book.id in stored_by_ids:
                                 stored_book = stored_by_ids[book.id]
                                 updated_booklist["books"].append(stored_book)
@@ -96,7 +119,8 @@ class Storage:
                                         "id": book.id, 
                                         "title": book.title, 
                                         "author": book.author, 
-                                        "url": book.goodreads_url, 
+                                        "url": book.goodreads_url,
+                                        "source": "goodreads", 
                                         "watch": False, 
                                         "added_at": datetime.now(timezone.utc).isoformat(),
                                         "removed": False
@@ -111,10 +135,17 @@ class Storage:
                 # Update removed books from goodreads
                 latest_book_ids = [_.id for _ in books]
 
-                for _id in stored_by_ids:
+                for _id, _stored_book in stored_by_ids.items():
                         if _id not in latest_book_ids:
 
-                                _removed_book = stored_by_ids[_id]
+                                # If this was added through "Add to list", then add it back and move on
+                                if _stored_book["source"] == "manual":
+                                      updated_booklist["books"].append(_stored_book)
+                                      continue
+
+                                # This was a previously added goodreads book thats now removed from
+                                # want-to-read
+                                _removed_book = _stored_book
                                 _removed_book["removed"] = True
 
                                 updated_booklist["removed"].append(_removed_book)
@@ -130,17 +161,43 @@ class Storage:
 
 
         def all_books_from_json(self) -> dict[str, list]:
-            stored_books = self._get_stored_books()
-            if stored_books:
-               return {
-                      "books": stored_books, 
-                      "new": self._get_recently_added_books(stored_books), 
-                      "removed": self._get_previously_removed_books(stored_books)
-               }
+                stored_books = self._get_stored_books()
+                if stored_books:
+                        return {
+                        "books": stored_books, 
+                        "new": self._get_recently_added_books(stored_books), 
+                        "removed": self._get_previously_removed_books(stored_books)
+                        }
 
-            # to maintain consistent interface for the front-end
-            return {"books": [], "new": [], "removed": []}
+                # to maintain consistent interface for the front-end
+                return {"books": [], "new": [], "removed": []}
 
+
+        def book_exists(self, book:Book):
+                stored_books = self._get_stored_books()
+                return any(book.id == b["id"] for b in stored_books)
+
+
+        def add_book(self, book:Book):
+                if self.book_exists(book):
+                       return False, "Book already exists."
+                       
+                new_book = {
+                        "id": book.id, 
+                        "title": book.title, 
+                        "author": book.author, 
+                        "url": book.goodreads_url,
+                        "source": "manual", 
+                        "watch": False, 
+                        "added_at": datetime.now(timezone.utc).isoformat(),
+                        "removed": False
+                }
+
+                stored_books = self._get_stored_books()
+                stored_books.append(new_book)
+                self._save_books(stored_books)
+                return True, "Book added."
+                
 
         def get_watchlist(self) -> list[dict]:
             stored_books = self._get_stored_books()
@@ -172,18 +229,3 @@ class Storage:
 
 
 
-        def _save_books(self, books: list[dict]):
-                with open(BOOKS_FILE, 'w') as file:
-                        json.dump(books, file, ensure_ascii=False, indent=4)
-
-
-        def _get_stored_books(self) -> list[dict]:
-            try:
-                with open(BOOKS_FILE, 'r') as file:
-                    books = json.load(file)
-                    return books
-            except FileNotFoundError:
-                   f = open(BOOKS_FILE, 'w')
-                   f.close()
-            except: 
-                   return []

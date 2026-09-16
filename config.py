@@ -28,4 +28,8 @@ LONG_LONG_TIMEOUT = 5000
 
 
 # Debug
-DEBUG_MODE = True
+DEBUG_MODE = False
+
+
+# push message
+NOTIFICATION_ON = True

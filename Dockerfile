@@ -14,6 +14,9 @@ RUN apt-get update \
 
 COPY . .
 
+RUN chmod +x /app/run.sh
+
 EXPOSE 8080
 
-CMD ["sh", "-c", "Xvfb :99 -screen 0 1440x900x24 & export DISPLAY=:99 && exec python main.py"]
+
+CMD ["/app/run.sh"]

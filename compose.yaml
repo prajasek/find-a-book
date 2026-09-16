@@ -1,0 +1,10 @@
+services:
+  findabook:
+    build: .
+    image: findabook
+    ports:
+      - "8000:8080"
+    volumes:
+      - ./books.json:/app/books.json
+    env_file:
+      - .env

@@ -16,7 +16,6 @@ def format_want_to_read_books(books: list[Book]) -> str:
         return "\n".join(lines)
 
 
-
 def format_detailed(books: list[Book]) -> str:
     lines = []
 
@@ -97,3 +96,50 @@ def format_by_location(books: list[Book]) -> str:
 
         lines.append("")
     return "\n".join(lines)
+
+
+def format_by_book(books: list[Book]) -> str:
+    lines = []
+
+    for book in books:
+        title = book.title
+        author = book.author
+
+        lines.append(f"📚 {title} ({author})")
+
+        if not book.library_book: 
+            lines.append("Book not found in catalog. ❌")
+            continue
+
+        match_type = ""
+
+        if book.library_book.match_type == "close":
+            match_type = "☑️"
+
+        elif book.library_book.match_type == "exact":
+            match_type = "✅"
+
+        libraries = book.library_book.libraries
+
+
+        found = False
+        for library in libraries: 
+            if library.available:
+                found = True
+                loc = library.location
+                count = library.available_count
+
+                lines.append(f"{loc}: {count} {match_type}")
+
+        if not found:
+            lines.append("No copies available. 🚫")
+
+        lines.append("")
+
+    return "\n".join(lines)
+
+        
+        
+
+            
+        

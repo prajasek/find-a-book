@@ -1,21 +1,25 @@
 import json
 from dataclasses import asdict
+from datetime import datetime
 from flask import Flask, render_template, request, Response, jsonify
 from patchright.sync_api import Page, sync_playwright
 from book import Book
-from config import DEBUG_MODE, HEADLESS_MODE, SLOW_MO
-from _helpers import _setup_debug
+from config import DEBUG_MODE, HEADLESS_MODE, SLOW_MO, NOTIFICATION_ON
+from _helpers import _setup_debug, _normalize_before_search
 from storage import Storage
-from _formatters import format_by_location, format_detailed, format_want_to_read_books
+from _formatters import format_by_book
 from goodreads import get_goodreads_books, goodreads_login
 from library import Library
+from push import push_message
 
 app = Flask(__name__)
+
 
 @app.route("/")
 def index():
     print(f"Starting...path={request.path}")
     return render_template("index.html", username="Prasanth")
+
 
 
 @app.route("/stored-books")
@@ -27,11 +31,9 @@ def retrieve_books():
     return jsonify(books_info)
 
 
+
 @app.route("/watch", methods=["POST"])
 def watch():
-    if request.method != "POST":
-        return "Method Not Allowed", 405
-
     details = request.get_json()
 
     book_id = details["book_id"]
@@ -51,6 +53,24 @@ def watch():
             "status":200
         }
 
+
+
+@app.route("/add", methods=["POST"])
+def add_book():
+    book_details = request.get_json()
+
+    title = _normalize_before_search(book_details["title"])
+    author = _normalize_before_search(book_details["author"])
+
+    book = Book(title, author)
+
+    storage = Storage()
+    add_success, msg = storage.add_book(book)
+
+    if not add_success:
+        return {"msg": msg, "status":409}
+    
+    return {"msg": msg, "status":200}
 
 
 @app.route("/<string:action>")
@@ -149,6 +169,21 @@ def run(page: Page, action: str) -> tuple[str, list[Book] | None]:
         library_handler = Library(page)
         library_handler.search_books(book_objects)
 
+        formatted_resp = format_by_book(book_objects)
+
+        with open("_____formatted.txt", 'w', encoding="utf-8") as file:
+            file.write(formatted_resp)
+
+        if NOTIFICATION_ON:
+            push_success = push_message(formatted_resp)
+
+            if not push_success:
+                print(f"Push Notification Failed.  {datetime.now().strftime('%b %d, %Y at %I:%M %p')} ")
+            else:
+                print(f"Pushed notification at {datetime.now().strftime('%b %d, %Y at %I:%M %p')}")
+
+
+        # convert [Book(), Book()...] -> [{book}, {book}...]
         books_info["books"] =  [asdict(book) for book in book_objects]
         books_info["type"]= "library"
         return books_info
@@ -184,6 +219,8 @@ def run(page: Page, action: str) -> tuple[str, list[Book] | None]:
         books = [book]
 
         library_handler.search_books(books)
+
+
         return {"type": "search", "books": books, "new": [], "removed": []}
 
     if DEBUG_MODE:
@@ -205,4 +242,5 @@ def run(page: Page, action: str) -> tuple[str, list[Book] | None]:
 
 
 if __name__ == "__main__":
+
     app.run("0.0.0.0", port=8080)

@@ -81,17 +81,7 @@ def _get_books(page) -> list[Book]:
 
         books.append(_book)
 
-    print(books)
-
-    if DEBUG_MODE:
-        _save_books(books)  # Save the books to a JSON file
-
     return books
-
-
-def _save_books(books: list[Book]):
-    with open("goodreads_books.json", "w", encoding="utf-8") as file:
-        json.dump([asdict(book) for book in books], file, ensure_ascii=False, indent=4)
 
 
 def _navigate_to_want_to_read(page):
@@ -123,6 +113,7 @@ def get_goodreads_books(page) -> list[Book]:
             _sanity_footer_visibility_check(page)
 
             break
+        
         except TimeoutError:
             if attempt == 1:
                 print("Failed to get books from goodreads.")
