@@ -257,7 +257,7 @@ class Library:
         """Get title, author, url from each card panel from
         search results and return a LibraryBook.
         """
-        print("Extracting info")
+        # print("Extracting info")
 
         title_locator = card.locator('[data-automation-id="search-card-title"]')
         author_locator = card.locator('[data-automation-id="author"]')
