@@ -13,7 +13,8 @@ VIEWPORT= { "width": 1440, "height": 900  }
 
 # Files and Directories
 SCREENSHOTS_DIR="screenshots"
-BOOKS_FILE = "books.json"
+TEMPLATE_FOLDER = "../templates"
+STATIC_FOLDER = "../static"
 
 
 # Target Library Locations
@@ -28,8 +29,4 @@ LONG_LONG_TIMEOUT = 5000
 
 
 # Debug
-DEBUG_MODE = False
-
-
-# push message
-NOTIFICATION_ON = True
+DEBUG_MODE=False

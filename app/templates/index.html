@@ -16,24 +16,13 @@
 
     <main class="container">
 
-        <h1>FindABook</h1>
+        <header class="top-nav">
+            <h1 id="app-name">FindaBook</h1>
 
-        <!-- Navigation / Actions -->
-        <section class="actions">
-            <form id="home" action="/" method="get">
-                <button type="submit">🏠 Home </button>
-            </form>
-            <form id="goodreads-form" action="/goodreads" method="get">
-                <button type="submit">Get Want-to-Read List</button>
-            </form>
-
-            <form id="library-form" action="/library" method="get">
-                <button type="submit">Search Library for Watchlist</button>
-            </form>
-
-
-        </section>
-
+            <div class="notification-control">
+                <button id="notification-toggle">Notifications: OFF</button>
+            </div>
+        </header>
 
         <!-- Manual Book Search -->
         <section class="search-section">
@@ -75,14 +64,36 @@
 
         </section>
 
+         <!-- Navigation / Actions -->
+        <section class="actions">
+            <form id="home" action="/stored-books" method="get">
+                <button type="submit">🏠 Home </button>
+            </form>
+            <form id="goodreads-form" action="/goodreads" method="get">
+                <button type="submit">Sync Goodreads List</button>
+            </form>
 
+            <form id="library-form" action="/library" method="get">
+                <button type="submit">Search Library for Watchlist</button>
+            </form>
+
+
+        </section>
+
+
+        <section>
+            <input 
+                type="text" 
+                id="search-list" 
+                placeholder="Search list by title or author" 
+                autocomplete="off" />
+        </section>
         <!-- Results -->
         <section
             id="results-section"
             class="results-section"
         >
 
-            <h2>Results</h2>
             <span id="loader" class="hidden-loader">Loading</span>
 
             <div

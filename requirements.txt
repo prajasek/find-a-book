@@ -1,3 +1,4 @@
 Flask
 patchright
 python-dotenv
+requests

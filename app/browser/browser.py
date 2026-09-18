@@ -1,5 +1,5 @@
 from patchright.sync_api import sync_playwright
-from config import HEADLESS_MODE, SLOW_MO
+from app.config import HEADLESS_MODE, SLOW_MO
 
 
 class Browser:

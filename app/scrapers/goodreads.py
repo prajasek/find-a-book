@@ -4,26 +4,43 @@ import os
 from dataclasses import asdict
 from dotenv import load_dotenv
 from patchright.sync_api import Page, expect, TimeoutError
-from book import Book
-from config import DEBUG_MODE, GOODREADS_HOMEPAGE, GOODREADS_SIGNIN
-from _helpers import _normalize_before_search
+from app.book import Book
+from app.config import DEBUG_MODE, GOODREADS_HOMEPAGE, GOODREADS_SIGNIN, LONG_LONG_TIMEOUT
+from app.utils._helpers import _normalize_before_search
 
 load_dotenv()
 
 
 def goodreads_login(page: Page):
     print("Attempting Login...")
-    page.goto(GOODREADS_SIGNIN)
-    page.get_by_role("button", name="Sign in with email").click()
 
-    page.get_by_role("textbox", name="Email").fill(os.getenv("GOODREADS_USER"))
-    page.get_by_role("textbox", name="Password").fill(os.getenv("GOODREADS_PASSWORD"))
-    page.get_by_role("button", name="Sign in").click()
+    for attempt in range(2):
+        try:
+            page.goto(GOODREADS_SIGNIN)
+            page.get_by_role("button", name="Sign in with email").click()
 
-    expect(page.get_by_role("main")).to_be_visible()
+            page.get_by_role("textbox", name="Email").fill(os.getenv("GOODREADS_USER"))
+            page.get_by_role("textbox", name="Password").fill(os.getenv("GOODREADS_PASSWORD"))
+            page.get_by_role("button", name="Sign in").click()
 
-    print("Login successful.")
+            page.get_by_role("main").wait_for(timeout=10000)
 
+            print("Login successful.")
+            return
+
+        except TimeoutError:
+            print(f"Goodreads login attempt {attempt+1} timed out.")
+            print(f"Current url: {page.url}")
+
+            page.goto(GOODREADS_SIGNIN)
+
+            if page.url != GOODREADS_SIGNIN:
+                return
+
+            if attempt == 1:
+                raise
+
+        
 
 def _scroll_until_stable(page):
     books_table = page.locator("#booksBody > tr")

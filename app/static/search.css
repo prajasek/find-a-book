@@ -344,7 +344,22 @@ white-space: pre-line;
   background-color: #263449;
 }
 
+.results-table tr:last-child td {
+  border-bottom: none;
+}
 
+.results-table th {
+   background-color: #172033;
+}
+
+tr {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+tr.removing {
+    opacity: 0;
+    transform: translateX(30px);
+}
 /* =========================================================
    Availability
    ========================================================= */
@@ -401,6 +416,8 @@ white-space: pre-line;
 
     margin-bottom: 30px;
   }
+
+
 
   .container {
     max-width: 100%;
@@ -459,6 +476,69 @@ white-space: pre-line;
 
   }
 
+    .top-nav {
+        gap: 10px;
+        margin-bottom:30px;
+    }
+
+    #app-name {
+        font-size: 40px;
+        margin: 0;
+        white-space: nowrap;
+    }
+
+    .notification-control {
+        flex-shrink: 0;
+    }
+
+    #notification-toggle {
+        font-size: 0.8rem;
+        padding: 10px 16px;
+        margin-top: 0;
+        white-space: nowrap;
+    }
+
+
+}
+
+
+.add-button {
+    font-size: 1em;
+    background: transparent;
+    border: 1px solid #d6d1d6;
+    color: #e7e7e7;
+    padding: 10px 24px;
+    border-radius: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.add-button:hover {
+    background: #7b5ac7;
+    color: white;
+}
+
+.add-button.watching {
+    background: #cecdce;
+    border-color: #2c2b2c;
+    color: rgb(0, 0, 0);
+}
+
+.add-button.watching:hover {
+    background: #c00075;
+}
+
+.add-button:disabled {
+    background: #cecdce;
+    border-color: #2c2b2c;
+    color: #000;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.add-button:disabled:hover {
+    background: #cecdce;
 }
 
 
@@ -599,4 +679,18 @@ white-space: pre-line;
     background: #3d3030;
     border-color: #765050;
     color: #f0b5b5;
+}
+
+
+.top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.notification-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }

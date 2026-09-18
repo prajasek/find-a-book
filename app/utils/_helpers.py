@@ -3,7 +3,7 @@ import hashlib
 import re
 import unicodedata
 from patchright.sync_api import Page
-from config import VIEWPORT
+from app.config import VIEWPORT
 
 # # clear the log file for each run
 # file = open("time_logs.txt", 'w')

@@ -1,5 +1,5 @@
-from book import Book
-from config import TARGET_LIBRARIES
+from app.book import Book
+from app.config import TARGET_LIBRARIES
 
 
 
@@ -109,6 +109,7 @@ def format_by_book(books: list[Book]) -> str:
 
         if not book.library_book: 
             lines.append("Book not found in catalog. ❌")
+            lines.append("")
             continue
 
         match_type = ""

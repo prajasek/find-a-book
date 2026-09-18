@@ -9,4 +9,4 @@ export DISPLAY=:99
 
 trap 'kill $XVFB_PID' EXIT INT TERM
 
-exec python main.py
+exec python -m app.main

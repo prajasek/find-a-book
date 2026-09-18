@@ -9,8 +9,8 @@ from patchright.sync_api import (
     expect,
     TimeoutError,
 )
-from book import Book, LibraryBook, LibraryLocation
-from config import (
+from app.book import Book, LibraryBook, LibraryLocation
+from app.config import (
     LIBRARY_URL,
     LONG_LONG_TIMEOUT,
     TARGET_LIBRARIES,
@@ -306,19 +306,6 @@ class Library:
             if library_book:
                 candidates.append(library_book)
 
-        # if DEBUG_MODE:
-        #     with open(
-        #         f"SEARCH_RESULTS/results_{target_book.normalized_title}.json",
-        #         "w",
-        #         encoding="utf-8",
-        #     ) as file:
-        #         json.dump(
-        #             [asdict(book) for book in candidates],
-        #             file,
-        #             ensure_ascii=False,
-        #             indent=4,
-        #         )
-
         return candidates
 
     def _update_availability(self, target_book: Book) -> bool:
@@ -495,7 +482,16 @@ class Library:
 
     def search_books(self, books: list[Book]):
 
-        self._get_fresh_search_session()
+        for attempt in range(3):
+            try:
+                self._get_fresh_search_session()
+                break
+            except TimeoutError:
+                print("Failed to create search session. Retrying...")
+
+            if attempt == 2:
+                raise
+
 
         for book in books:
             for attempt in range(2):

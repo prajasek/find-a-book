@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 import hashlib
 from typing import Literal
-from _helpers import _normalize_title, _normalize_author
+from app.utils._helpers import _normalize_title, _normalize_author
 from enum import Enum
 
 

@@ -1,11 +1,19 @@
 from dataclasses import asdict
 from datetime import datetime, timezone
 import json
-import re
-import unicodedata
-from config import BOOKS_FILE, DEBUG_MODE, NEW_BOOK_THRESHOLD_HRS
-from book import Book
-from _helpers import _delta_hours
+import os
+from app.config import DEBUG_MODE, NEW_BOOK_THRESHOLD_HRS
+from app.book import Book
+from app.utils._helpers import _delta_hours, _normalize_author, _normalize_title
+
+
+####   LOAD SETTINGS AND BOOKS ###############
+from dotenv import load_dotenv
+load_dotenv()
+
+BOOKS_FILE = os.getenv("BOOKS_FILE", "/database/books.json")
+SETTINGS_FILE = os.getenv("SETTINGS_FILE", "/database/settings.json")
+print("loaded files")
 
 ######## STORE BOOK DETAILS #####################
 
@@ -30,8 +38,38 @@ from _helpers import _delta_hours
 # if books exist, let it be
 # if books were removed, then add them to a removed list for response
 
-class Storage:
 
+
+class Storage:
+        def get_notification_status(self):
+                try:
+                        with open(SETTINGS_FILE, 'r', encoding='utf-8') as file:
+                                data = json.load(file)
+                        return True, data["notifications"], "Succesfully loaded notification"
+                except:
+                       return False, None, "Error getting notification status"
+             
+                
+        def toggle_notification(self):
+                try:
+                        success, status, msg = self.get_notification_status()
+
+                        if not success:
+                               return success, status, msg
+                        
+                        status = not status
+                        status_dict = {"notifications": status}
+
+                        print("trying to toggle notification: ", status_dict["notifications"])
+
+                        with open(SETTINGS_FILE, 'w', encoding='utf-8') as file:
+                                json.dump(status_dict, file, ensure_ascii=False, indent=4)
+
+                        return True, status, f"notification set to {status}"
+
+                except:
+                       return False, None,  f"Could not toggle notification status."
+                
 
         def _save_books(self, books: list[dict]):
                 with open(BOOKS_FILE, 'w') as file:
@@ -51,7 +89,7 @@ class Storage:
                    return []
 
 
-        def _stored_books_by_id(self):
+        def _get_stored_books_by_id(self):
                 stored_books = self._get_stored_books()
                 return {
                        _book["id"]:_book
@@ -105,7 +143,7 @@ class Storage:
                             "removed": []
                         }
 
-                stored_by_ids = self._stored_books_by_id()
+                stored_by_ids = self._get_stored_books_by_id()
             
                 for book in books:
                         # Pre-existing books. Add them back.
@@ -164,18 +202,35 @@ class Storage:
                 stored_books = self._get_stored_books()
                 if stored_books:
                         return {
-                        "books": stored_books, 
-                        "new": self._get_recently_added_books(stored_books), 
-                        "removed": self._get_previously_removed_books(stored_books)
+                                "books": stored_books, 
+                                "new": self._get_recently_added_books(stored_books), 
+                                "removed": self._get_previously_removed_books(stored_books)
                         }
 
                 # to maintain consistent interface for the front-end
                 return {"books": [], "new": [], "removed": []}
 
 
+        def _titles_match(self, title1, title2):
+
+                words1 = set(_normalize_title(title1).split())
+                words2 = set(_normalize_title(title2).split())
+
+                return words1 <= words2 or words2 <= words1
+        
+
         def book_exists(self, book:Book):
                 stored_books = self._get_stored_books()
-                return any(book.id == b["id"] for b in stored_books)
+                
+                for _b in stored_books:
+                       if (
+                        self._titles_match(_b["title"], book.title)
+                        and book.normalized_author == _normalize_author(_b["author"])
+                        ):      
+                                print("already in json")
+                                return True
+
+                return False
 
 
         def add_book(self, book:Book):
@@ -197,7 +252,22 @@ class Storage:
                 stored_books.append(new_book)
                 self._save_books(stored_books)
                 return True, "Book added."
+
+
+
+        def remove_book(self, id: str):
+                stored_books = self._get_stored_books()
+
+                for book in stored_books:
+                       if book["id"] == id:
+                              stored_books.remove(book)
+                              self._save_books(stored_books)
+                              return True, "Book removed."
+
+                return False, "Book not found."
                 
+
+
 
         def get_watchlist(self) -> list[dict]:
             stored_books = self._get_stored_books()

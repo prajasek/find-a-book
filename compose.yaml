@@ -5,6 +5,6 @@ services:
     ports:
       - "8000:8080"
     volumes:
-      - ./books.json:/app/books.json
+      - ./database/books.json:/findabook/database/books.json
     env_file:
       - .env
