@@ -11,6 +11,7 @@ from patchright.sync_api import (
 )
 from app.book import Book, LibraryBook, LibraryLocation
 from app.config import (
+    EXTRA_LONG_TIMEOUT,
     LIBRARY_URL,
     LONG_LONG_TIMEOUT,
     TARGET_LIBRARIES,
@@ -414,7 +415,7 @@ class Library:
 
         print(f"SEARCHING ----------  {book.title}")
 
-        self.searchbar.wait_for(timeout=TIMEOUT)
+        self.searchbar.wait_for(timeout=LONG_TIMEOUT)
         self.searchbar.fill(book.title)
 
         # Wait for 'material_type' API response that responds with available formats for the book.
@@ -459,7 +460,7 @@ class Library:
         self.searchbar.fill("1")
         self.searchbar.press("Enter")
         self.page.get_by_role("region", name="Refine Results").wait_for(
-            timeout=LONG_TIMEOUT
+            timeout=EXTRA_LONG_TIMEOUT
         )
 
     def _get_fresh_search_session(self):
