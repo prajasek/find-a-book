@@ -8,5 +8,5 @@ Features:
 1) Sync watchlist from Goodreads.
 2) Search for book availabilty in nearyby library. 
 3) Set a watchlist of books to watch and automatically search the library for the watchlist of books. 
-4) Feature to enable Notification which pushes messages to phone or other devices. 
+4) Feature to enable Notification which pushes messages to phone or other devices.
 
