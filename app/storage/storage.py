@@ -11,9 +11,14 @@ from app.utils._helpers import _delta_hours, _normalize_author, _normalize_title
 from dotenv import load_dotenv
 load_dotenv()
 
-BOOKS_FILE = os.getenv("BOOKS_FILE", "/database/books.json")
-SETTINGS_FILE = os.getenv("SETTINGS_FILE", "/database/settings.json")
-print("loaded files")
+if os.getenv("PROD")=="True":
+        BOOKS_FILE = os.getenv("BOOKS_FILE", "/database/books.json")
+        SETTINGS_FILE = os.getenv("SETTINGS_FILE", "/database/settings.json")    
+else:
+        BOOKS_FILE = "database/books.json"
+        SETTINGS_FILE = "database/settings.json"
+        
+print("loaded files", BOOKS_FILE, SETTINGS_FILE)
 
 ######## STORE BOOK DETAILS #####################
 
